@@ -12,6 +12,7 @@ class ModuleAudio;
 class ModulePlayer;
 class ModuleScenePinball;
 class ModulePhysics;
+class ModuleBall;
 
 class Application
 {
@@ -24,7 +25,7 @@ public:
 	ModulePlayer* player;
 	ModuleScenePinball* scene_pinball;
 	ModulePhysics* physics;
-
+	ModuleBall* ball;
 private:
 
 	p2List<Module*> list_modules;

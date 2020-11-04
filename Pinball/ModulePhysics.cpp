@@ -3,35 +3,14 @@
 #include "ModuleInput.h"
 #include "ModuleRender.h"
 #include "ModulePhysics.h"
+#include "p2Point.h"
 #include "math.h"
-
-#include "Box2D/Box2D/Box2D.h"
 
 #ifdef _DEBUG
 #pragma comment( lib, "Box2D/libx86/Debug/Box2D.lib" )
 #else
 #pragma comment( lib, "Box2D/libx86/Release/Box2D.lib" )
 #endif
-
-b2PointerHouse::b2PointerHouse() :bodyPointer(NULL) {};
-b2PointerHouse::b2PointerHouse(b2Body* b) :bodyPointer(b) {};
-
-void b2PointerHouse::GetPosition(int& x, int& y)const
-{
-	x =	METERS_TO_PIXELS(bodyPointer->GetPosition().x);
-	y = METERS_TO_PIXELS(bodyPointer->GetPosition().y);
-}
-
-float b2PointerHouse::GetRotation()const
-{
-	float a= RADTODEG * this->bodyPointer->GetAngle();
-	return a;
-}
-
-void b2PointerHouse::GetRadius(int& r)const
-{
-	r = METERS_TO_PIXELS(bodyPointer->GetFixtureList()->GetShape()->m_radius);
-}
 
 ModulePhysics::ModulePhysics(Application* app, bool start_enabled) : Module(app, start_enabled)
 {
@@ -49,7 +28,8 @@ bool ModulePhysics::Start()
 	LOG("Creating Physics 2D environment");
 
 	world = new b2World(b2Vec2(GRAVITY_X, -GRAVITY_Y));
-
+	// TODO 3: You need to make ModulePhysics class a contact listener
+	world->SetContactListener(this);
 	//// big static circle as "ground" in the middle of the screen
 	//int x = SCREEN_WIDTH / 2;
 	//int y = SCREEN_HEIGHT / 1.5f;
@@ -76,7 +56,95 @@ update_status ModulePhysics::PreUpdate()
 {
 	world->Step(1.0f / 60.0f, 6, 2);
 
+	// TODO: HomeWork
+	/*
+	for(b2Contact* c = world->GetContactList(); c; c = c->GetNext())
+	{
+	}
+	*/
+
 	return UPDATE_CONTINUE;
+}
+
+PhysBody* ModulePhysics::CreateCircle(int x, int y, int radius)
+{
+	b2BodyDef body;
+	body.type = b2_dynamicBody;
+	body.position.Set(PIXEL_TO_METERS(x), PIXEL_TO_METERS(y));
+
+	b2Body* b = world->CreateBody(&body);
+
+	b2CircleShape shape;
+	shape.m_radius = PIXEL_TO_METERS(radius);
+	b2FixtureDef fixture;
+	fixture.shape = &shape;
+	fixture.density = 1.0f;
+
+	b->CreateFixture(&fixture);
+
+	// TODO 4: add a pointer to PhysBody as UserData to the body
+	PhysBody* pbody = new PhysBody();
+	pbody->body = b;
+	pbody->width = pbody->height = radius;
+	b->SetUserData(pbody);
+	return pbody;
+}
+
+PhysBody* ModulePhysics::CreateRectangle(int x, int y, int width, int height)
+{
+	b2BodyDef body;
+	body.type = b2_dynamicBody;
+	body.position.Set(PIXEL_TO_METERS(x), PIXEL_TO_METERS(y));
+
+	b2Body* b = world->CreateBody(&body);
+	b2PolygonShape box;
+	box.SetAsBox(PIXEL_TO_METERS(width) * 0.5f, PIXEL_TO_METERS(height) * 0.5f);
+
+	b2FixtureDef fixture;
+	fixture.shape = &box;
+	fixture.density = 1.0f;
+
+	b->CreateFixture(&fixture);
+
+	PhysBody* pbody = new PhysBody();
+	pbody->body = b;
+	pbody->width = width * 0.5f;
+	pbody->height = height * 0.5f;
+	b->SetUserData(pbody);
+	return pbody;
+}
+
+PhysBody* ModulePhysics::CreateChain(int x, int y, int* points, int size)
+{
+	b2BodyDef body;
+	body.type = b2_dynamicBody;
+	body.position.Set(PIXEL_TO_METERS(x), PIXEL_TO_METERS(y));
+
+	b2Body* b = world->CreateBody(&body);
+
+	b2ChainShape shape;
+	b2Vec2* p = new b2Vec2[size / 2];
+
+	for(uint i = 0; i < size / 2; ++i)
+	{
+		p[i].x = PIXEL_TO_METERS(points[i * 2 + 0]);
+		p[i].y = PIXEL_TO_METERS(points[i * 2 + 1]);
+	}
+
+	shape.CreateLoop(p, size / 2);
+
+	b2FixtureDef fixture;
+	fixture.shape = &shape;
+
+	b->CreateFixture(&fixture);
+
+	delete p;
+
+	PhysBody* pbody = new PhysBody();
+	pbody->body = b;
+	pbody->width = pbody->height = 0;
+	b->SetUserData(pbody);
+	return pbody;
 }
 
 // 
@@ -175,81 +243,91 @@ bool ModulePhysics::CleanUp()
 	return true;
 }
 
-
-b2PointerHouse* ModulePhysics::CreatCircle(int x, int y, int radius_)
+void PhysBody::GetPosition(int& x, int &y) const
 {
-	b2BodyDef body;
-	body.type = b2_dynamicBody;
-	float radius = PIXEL_TO_METERS(radius_);
-	body.position.Set(PIXEL_TO_METERS(x), PIXEL_TO_METERS(y));
-
-	b2Body* b = world->CreateBody(&body);
-	
-	b2CircleShape shape;
-	shape.m_radius = radius;
-	b2FixtureDef fixture;
-	fixture.shape = &shape;
-	fixture.density = 1.0f;
-
-	b->CreateFixture(&fixture);
-	b2PointerHouse* p = new b2PointerHouse;
-	p->bodyPointer = b;
-	p->radius = radius_;
-	return p;
+	b2Vec2 pos = body->GetPosition();
+	x = METERS_TO_PIXELS(pos.x) - (width);
+	y = METERS_TO_PIXELS(pos.y) - (height);
 }
 
-b2PointerHouse *ModulePhysics::CreateRectangle(int x, int y, int w, int h)
+float PhysBody::GetRotation() const
 {
-	// TODO 1: When pressing 2, create a box on the mouse position
-	b2BodyDef body;
-	body.type = b2_dynamicBody;
-	body.position.Set(PIXEL_TO_METERS(x), PIXEL_TO_METERS(y));
-
-	b2Body* b = world->CreateBody(&body);
-
-	b2PolygonShape shape;
-	shape.SetAsBox(PIXEL_TO_METERS(w), PIXEL_TO_METERS(h)); // This would be (1m,0.5m)	
-	b2FixtureDef fixture;
-	fixture.shape = &shape;
-	// TODO 2: To have the box behave normally, set fixture's density to 1.0f
-	fixture.density = 1.0f;
-	
-	b->CreateFixture(&fixture);
-	b2PointerHouse* p = new b2PointerHouse;
-	p->bodyPointer = b;
-	p->w = w;
-	p->h = h;
-	return p;
+	return RADTODEG * body->GetAngle();
 }
 
-
-b2PointerHouse* ModulePhysics::CreateChain(int x, int y)
+bool PhysBody::Contains(int x, int y) const
 {
-	// TODO 3: Create a chain shape using those vertices
-	// remember to convert them from pixels to meters!
-	b2BodyDef body;
-	body.type = b2_dynamicBody;
-	body.position.Set(PIXEL_TO_METERS(x), PIXEL_TO_METERS(y));
-	b2Body* b = world->CreateBody(&body);
+	bool ret = false;
+	// TODO 1: Write the code to return true in case the point
+	// is inside ANY of the shapes contained by this body
+	b2Shape* shape = body->GetFixtureList()->GetShape();
 
-	int points[68] = {};
-
-	b2Vec2 vs[68];
-	for (int i = 0; i < 68 / 2; ++i) // i = VERTICES / 2
+	if (shape != NULL)
 	{
-		vs[i].Set(PIXEL_TO_METERS(points[2 * i]), PIXEL_TO_METERS(points[2 * i + 1]));
+		b2Vec2 point = { 0,0 };
+		point.x = PIXEL_TO_METERS(x);
+		point.y = PIXEL_TO_METERS(y);
+
+		ret = shape->TestPoint(body->GetTransform(), point); 
 	}
 
-	b2ChainShape chain;
-	chain.CreateLoop(vs, 68 / 2);
-
-	b2FixtureDef fixture;
-	fixture.shape = &chain;
-	fixture.density = 1.0f;
-
-	b->CreateFixture(&fixture);
-
-	b2PointerHouse* p = new b2PointerHouse;
-	p->bodyPointer = b;
-	return p;
+	return ret;
 }
+
+int PhysBody::RayCast(int x1, int y1, int x2, int y2, float& normal_x, float& normal_y) const // Used to avoid tunelling effects
+{
+	// TODO 2: Write code to test a ray cast between both points provided. If not hit return -1
+	// if hit, fill normal_x and normal_y and return the distance between x1,y1 and it's colliding point
+	int ret = -1;
+
+	// Take as one unit the lenght of point 1 and point 2 and it (fraction) is that many times the distance between point 1 
+	// and it's colliding point.
+	// Point 1 and 2 define the direction of the ray (vector)
+	b2Fixture* fixture = body->GetFixtureList();
+
+	while (fixture != NULL)
+	{
+		b2RayCastInput input;
+		input.p1 = { PIXEL_TO_METERS((float)x1),PIXEL_TO_METERS((float)y1) };
+		input.p2 = { PIXEL_TO_METERS((float)x2),PIXEL_TO_METERS((float)y2) };
+		input.maxFraction = 1.0f;
+		int32 childIndex = 0;
+
+		b2RayCastOutput output;
+		bool hit = fixture->RayCast(&output, input, childIndex);
+		if (hit)
+		{
+			normal_x = output.normal.x;
+			normal_y = output.normal.y;
+			float fx = x2 - x1;
+			float fy = y2 - y1;
+			float distP1P2 = sqrtf((normal_x * normal_x) + (normal_y * normal_y)); // Vector lenght
+
+			// MAXFRACTION (how far do you want the ray to extend to)
+			// max_lenght_raycast = max_fraction * vector_lenght(p2,p1);
+			float total_dist = output.fraction * distP1P2;
+
+			return total_dist;
+		}
+		fixture = fixture->GetNext();
+	}
+	return ret;
+}
+
+// TODO 3
+void ModulePhysics::BeginContact(b2Contact* contact)
+{
+	LOG("Collision!");
+	PhysBody * physBodyA = (PhysBody*)contact->GetFixtureA()->GetBody()->GetUserData();
+	PhysBody * physBodyB = (PhysBody*)contact->GetFixtureB()->GetBody()->GetUserData();
+
+	// TODO 7: Call the listeners that are not NULL
+
+	if (physBodyA && physBodyA->listener != NULL)
+		physBodyA->listener->OnCollision(physBodyA, physBodyB);
+
+	if (physBodyB && physBodyB->listener != NULL)
+		physBodyB->listener->OnCollision(physBodyB, physBodyA);
+}
+
+

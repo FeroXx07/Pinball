@@ -1,11 +1,11 @@
 #pragma once
 #include "Module.h"
 #include "p2List.h"
+#include "p2Point.h"
 #include "Globals.h"
-#include "p2List.h"
+
 
 class PhysBody;
-class b2PointerHouse;
 
 class ModuleScenePinball : public Module
 {
@@ -16,14 +16,32 @@ public:
 	bool Start();
 	update_status Update();
 	bool CleanUp();
+	void OnCollision(PhysBody* bodyA, PhysBody* bodyB);
 	void BlitAll();
 
 public:
+	p2List<PhysBody*> circles;
+	p2List<PhysBody*> boxes;
+	p2List<PhysBody*> ricks;
+
+	PhysBody* sensor;
+	bool sensed;
+
 	SDL_Texture* circle;
 	SDL_Texture* box;
+	SDL_Texture* rick;
 	SDL_Texture* backgroundTex;
 
-	p2List<b2PointerHouse*>circles;
-	p2List<b2PointerHouse*>rects;
-	p2List<b2PointerHouse*>ricks;
+	uint bonus_fx;
+	p2Point<int> ray;
+	bool ray_on;
+
+
+private:
+	bool principalMap = false;
+	bool specialLeftNet = false;
+	bool specialRightKicker = true;  // True at start
+	bool specialRightZigZag = false;
+	bool specialCenterTwirl = false;
+	bool specialLeftToRight = false;
 };

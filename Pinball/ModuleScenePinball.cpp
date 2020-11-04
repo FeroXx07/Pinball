@@ -4,14 +4,16 @@
 #include "ModuleScenePinball.h"
 #include "ModuleInput.h"
 #include "ModuleTextures.h"
+#include "ModuleAudio.h"
 #include "ModulePhysics.h"
-
 
 
 
 ModuleScenePinball::ModuleScenePinball(Application* app, bool start_enabled) : Module(app, start_enabled)
 {
-	circle = box = NULL;
+	circle = box = rick = NULL;
+	ray_on = false;
+	sensed = false;
 }
 
 ModuleScenePinball::~ModuleScenePinball()
@@ -27,7 +29,16 @@ bool ModuleScenePinball::Start()
 
 	circle = App->textures->Load("pinball/wheel.png"); 
 	box = App->textures->Load("pinball/crate.png");
-	backgroundTex = App->textures->Load("pinball/BG.png");
+	rick = App->textures->Load("pinball/rick_head.png");
+	backgroundTex = App->textures->Load("pinball/BG2.png");
+	bonus_fx = App->audio->LoadFx("pinball/bonus.wav");
+
+	principalMap = true;
+	specialLeftNet = false;
+	specialRightKicker = false;  // True at start
+	specialRightZigZag = false;
+	specialCenterTwirl = false;
+	specialLeftToRight = false;
 
 	return ret;
 }
@@ -43,22 +54,71 @@ bool ModuleScenePinball::CleanUp()
 // Update: draw background
 update_status ModuleScenePinball::Update()
 {
-	// TODO 5: Move all creation of bodies on 1,2,3 key press here in the scene
-	// On space bar press, create a circle on mouse position
-	if (App->input->GetKey(SDL_SCANCODE_1) == KEY_DOWN)
+	if(App->input->GetKey(SDL_SCANCODE_SPACE) == KEY_DOWN)
 	{
- 		circles.add(App->physics->CreatCircle((App->input->GetMouseX()), (App->input->GetMouseY()), 25));
+		ray_on = !ray_on;
+		ray.x = App->input->GetMouseX();
+		ray.y = App->input->GetMouseY();
+	}
+
+	if(App->input->GetKey(SDL_SCANCODE_1) == KEY_DOWN)
+	{
+		circles.add(App->physics->CreateCircle(App->input->GetMouseX(), App->input->GetMouseY(), 25));
+		// TODO 8: Make sure to add yourself as collision callback to the circle you creates
+		circles.getLast()->data->listener = (Module*)this;
 	}
 
 	if (App->input->GetKey(SDL_SCANCODE_2) == KEY_DOWN)
 	{
-		rects.add(App->physics->CreateRectangle(App->input->GetMouseX(), App->input->GetMouseY(),50,25));
+		boxes.add(App->physics->CreateRectangle(App->input->GetMouseX(), App->input->GetMouseY(), 100, 50));
 	}
 
 	if (App->input->GetKey(SDL_SCANCODE_3) == KEY_DOWN)
 	{
-		ricks.add(App->physics->CreateChain(App->input->GetMouseX(), App->input->GetMouseY()));
+		// Pivot 0, 0
+		int rick_head[64] = {
+			14, 36,
+			42, 40,
+			40, 0,
+			75, 30,
+			88, 4,
+			94, 39,
+			111, 36,
+			104, 58,
+			107, 62,
+			117, 67,
+			109, 73,
+			110, 85,
+			106, 91,
+			109, 99,
+			103, 104,
+			100, 115,
+			106, 121,
+			103, 125,
+			98, 126,
+			95, 137,
+			83, 147,
+			67, 147,
+			53, 140,
+			46, 132,
+			34, 136,
+			38, 126,
+			23, 123,
+			30, 114,
+			10, 102,
+			29, 90,
+			0, 75,
+			30, 62
+		};
+
+		ricks.add(App->physics->CreateChain(App->input->GetMouseX(), App->input->GetMouseY(), rick_head, 64));
 	}
+
+	// AL booleans false -- > Activate the array/list of chains of all map
+	
+	// If one boolean is true -- > Deactivate whole 
+		// Activate bodies to the corresponding boolean
+
 
 	BlitAll();
 
@@ -67,36 +127,71 @@ update_status ModuleScenePinball::Update()
 
 void ModuleScenePinball::BlitAll()
 {
-	// TODO 7: Draw all the circles using "circle" texture
+
 	App->renderer->Blit(backgroundTex, 0, 0);
 
-	p2List_item<b2PointerHouse*>* c = circles.getFirst();
-	while (c != NULL)
+// Prepare for raycast ------------------------------------------------------
+	iPoint mouse;
+	mouse.x = App->input->GetMouseX();
+	mouse.y = App->input->GetMouseY();
+	int ray_hit = ray.DistanceTo(mouse);
+
+	fVector normal(0.0f, 0.0f);
+
+	// All draw functions ------------------------------------------------------
+	p2List_item<PhysBody*>* c = circles.getFirst();
+
+	while(c != NULL)
 	{
-		int x = 0, y = 0;
-		int r = 0;
+		int x, y;
 		c->data->GetPosition(x, y);
-		//r = c->data->radius;
-		c->data->GetRadius(r);
-		App->renderer->Blit(circle, x - r, y - r, NULL, 1.0f, c->data->GetRotation()); // The data is already converted from meters to pixels
+		/*if(c->data->Contains(App->input->GetMouseX(), App->input->GetMouseY()))*/
+			App->renderer->Blit(circle, x, y, NULL, 1.0f, c->data->GetRotation());
 		c = c->next;
 	}
 
-	p2List_item<b2PointerHouse*>* b = rects.getFirst();
-	while (b != NULL)
+	c = boxes.getFirst();
+
+	while(c != NULL)
 	{
-		int x = 0, y = 0;
-		b->data->GetPosition(x, y);
-		App->renderer->Blit(box, x - b->data->w, y - b->data->h, NULL, 1.0f, b->data->GetRotation()); // The data is already converted from meters to pixels
-		b = b->next;
+		int x, y;
+		c->data->GetPosition(x, y);
+		App->renderer->Blit(box, x, y, NULL, 1.0f, c->data->GetRotation());
+		if(ray_on)
+		{
+			int hit = c->data->RayCast(ray.x, ray.y, mouse.x, mouse.y, normal.x, normal.y);
+			if(hit >= 0)
+				ray_hit = hit;
+		}
+		c = c->next;
 	}
 
-	//p2List_item<b2PointerHouse*>* r = ricks.getFirst();
-	//while (r != NULL)
-	//{
-	//	int x = 0, y = 0;
-	//	r->data->GetPosition(x, y);
-	//	App->renderer->Blit(rick, x, y, NULL, 1.0f, r->data->GetRotation()); // The data is already converted from meters to pixels
-	//	r = r->next;
-	//}
+	c = ricks.getFirst();
+
+	while(c != NULL)
+	{
+		int x, y;
+		c->data->GetPosition(x, y);
+		App->renderer->Blit(rick, x, y, NULL, 1.0f, c->data->GetRotation());
+		c = c->next;
+	}
+
+	// ray -----------------
+	if(ray_on == true)
+	{
+		fVector destination(mouse.x-ray.x, mouse.y-ray.y);
+		destination.Normalize();
+		destination *= ray_hit;
+
+		App->renderer->DrawLine(ray.x, ray.y, ray.x + destination.x, ray.y + destination.y, 255, 255, 255);
+
+		if(normal.x != 0.0f)
+			App->renderer->DrawLine(ray.x + destination.x, ray.y + destination.y, ray.x + destination.x + normal.x * 25.0f, ray.y + destination.y + normal.y * 25.0f, 100, 255, 100);
+	}
 }
+
+void ModuleScenePinball::OnCollision(PhysBody* bodyA, PhysBody* bodyB)
+{
+	App->audio->PlayFx(bonus_fx);
+}
+// TODO 8: Now just define collision callback for the circle and play bonus_fx audio
