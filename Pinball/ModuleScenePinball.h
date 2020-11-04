@@ -17,24 +17,21 @@ public:
 	update_status Update();
 	bool CleanUp();
 	void OnCollision(PhysBody* bodyA, PhysBody* bodyB);
-	void BlitAll();
-
 public:
-	p2List<PhysBody*> circles;
+	p2List<PhysBody*> bounces;
 	p2List<PhysBody*> boxes;
-	p2List<PhysBody*> ricks;
+	p2List<PhysBody*> chains;
 
 	PhysBody* sensor;
 	bool sensed;
 
-	SDL_Texture* circle;
+	SDL_Texture* bounce;
 	SDL_Texture* box;
-	SDL_Texture* rick;
-	SDL_Texture* backgroundTex;
+	SDL_Texture* chain;
+	SDL_Texture* infraTex;
 
 	uint bonus_fx;
-	p2Point<int> ray;
-	bool ray_on;
+	
 
 
 private:
@@ -44,4 +41,22 @@ private:
 	bool specialRightZigZag = false;
 	bool specialCenterTwirl = false;
 	bool specialLeftToRight = false;
+
+private:
+	bool LoadAssets();
+	void LoadMap();
+	void DrawBounces();
+	void DrawChains();
+	void DrawInfra();
+	void DebugCreate();
+
+private: // Raycast field
+	iPoint mouse;
+	int ray_hit;
+	fVector normal = { 0.0f, 0.0f };
+	p2Point<int> ray;
+	bool ray_on;
+
+	void PreRayCast();
+	void PostRayCast();
 };

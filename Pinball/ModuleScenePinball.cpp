@@ -7,11 +7,11 @@
 #include "ModuleAudio.h"
 #include "ModulePhysics.h"
 
-
+b2BodyType;
 
 ModuleScenePinball::ModuleScenePinball(Application* app, bool start_enabled) : Module(app, start_enabled)
 {
-	circle = box = rick = NULL;
+	bounce = box = chain = NULL;
 	ray_on = false;
 	sensed = false;
 }
@@ -19,19 +19,35 @@ ModuleScenePinball::ModuleScenePinball(Application* app, bool start_enabled) : M
 ModuleScenePinball::~ModuleScenePinball()
 {}
 
-// Load assets
+void ModuleScenePinball::LoadMap()
+{
+	// Create the three boing balls
+	bounces.add(App->physics->CreateCircle(182, 140, 23, b2BodyType::b2_staticBody));
+	bounces.getLast()->data->listener = (Module*)this;
+
+	bounces.add(App->physics->CreateCircle(254, 144, 23, b2BodyType::b2_staticBody));
+	bounces.getLast()->data->listener = (Module*)this;
+}
+
+bool ModuleScenePinball::LoadAssets()
+{
+	bool ret = true;
+
+	bounce = App->textures->Load("pinball/wheel.png");
+	box = App->textures->Load("pinball/crate.png");
+	chain = App->textures->Load("pinball/rick_head.png");
+	infraTex = App->textures->Load("pinball/InfraPinball.png");
+	bonus_fx = App->audio->LoadFx("pinball/bonus.wav");
+
+	return ret;
+}
+
 bool ModuleScenePinball::Start()
 {
 	LOG("Loading Intro assets");
 	bool ret = true;
 
-	App->renderer->camera.x = App->renderer->camera.y = 0;
-
-	circle = App->textures->Load("pinball/wheel.png"); 
-	box = App->textures->Load("pinball/crate.png");
-	rick = App->textures->Load("pinball/rick_head.png");
-	backgroundTex = App->textures->Load("pinball/BG2.png");
-	bonus_fx = App->audio->LoadFx("pinball/bonus.wav");
+	LoadAssets();
 
 	principalMap = true;
 	specialLeftNet = false;
@@ -40,32 +56,77 @@ bool ModuleScenePinball::Start()
 	specialCenterTwirl = false;
 	specialLeftToRight = false;
 
+	LoadMap();
+
 	return ret;
 }
 
-// Load assets
+
 bool ModuleScenePinball::CleanUp()
 {
 	LOG("Unloading Intro scene");
-	App->textures->Unload(backgroundTex);
+	App->textures->Unload(infraTex);
+
+	bounces.~p2List();
+	chains.~p2List();
+
 	return true;
 }
 
 // Update: draw background
 update_status ModuleScenePinball::Update()
 {
-	if(App->input->GetKey(SDL_SCANCODE_SPACE) == KEY_DOWN)
+	
+	DebugCreate();
+
+	// AL booleans false -- > Activate the array/list of chains of all map
+	
+	// If one boolean is true -- > Deactivate whole 
+		// Activate bodies to the corresponding boolean
+	
+	PreRayCast();
+
+	DrawInfra();
+	DrawBounces();
+	DrawChains();
+
+	PostRayCast();
+
+	return UPDATE_CONTINUE;
+}
+
+void ModuleScenePinball::PreRayCast()
+{
+	// Prepare for raycast 
+	mouse.x = App->input->GetMouseX();
+	mouse.y = App->input->GetMouseY();
+	ray_hit = ray.DistanceTo(mouse);
+	normal = { 0.0f, 0.0f };
+}
+
+void ModuleScenePinball::PostRayCast()
+{
+	// ray 
+	if (ray_on == true)
+	{
+		fVector destination(mouse.x - ray.x, mouse.y - ray.y);
+		destination.Normalize();
+		destination *= ray_hit;
+
+		App->renderer->DrawLine(ray.x, ray.y, ray.x + destination.x, ray.y + destination.y, 255, 255, 255);
+
+		if (normal.x != 0.0f)
+			App->renderer->DrawLine(ray.x + destination.x, ray.y + destination.y, ray.x + destination.x + normal.x * 25.0f, ray.y + destination.y + normal.y * 25.0f, 100, 255, 100);
+	}
+}
+
+void ModuleScenePinball::DebugCreate()
+{
+	if (App->input->GetKey(SDL_SCANCODE_SPACE) == KEY_DOWN)
 	{
 		ray_on = !ray_on;
 		ray.x = App->input->GetMouseX();
 		ray.y = App->input->GetMouseY();
-	}
-
-	if(App->input->GetKey(SDL_SCANCODE_1) == KEY_DOWN)
-	{
-		circles.add(App->physics->CreateCircle(App->input->GetMouseX(), App->input->GetMouseY(), 25));
-		// TODO 8: Make sure to add yourself as collision callback to the circle you creates
-		circles.getLast()->data->listener = (Module*)this;
 	}
 
 	if (App->input->GetKey(SDL_SCANCODE_2) == KEY_DOWN)
@@ -111,87 +172,49 @@ update_status ModuleScenePinball::Update()
 			30, 62
 		};
 
-		ricks.add(App->physics->CreateChain(App->input->GetMouseX(), App->input->GetMouseY(), rick_head, 64));
+		chains.add(App->physics->CreateChain(App->input->GetMouseX(), App->input->GetMouseY(), rick_head, 64));
 	}
-
-	// AL booleans false -- > Activate the array/list of chains of all map
-	
-	// If one boolean is true -- > Deactivate whole 
-		// Activate bodies to the corresponding boolean
-
-
-	BlitAll();
-
-	return UPDATE_CONTINUE;
 }
 
-void ModuleScenePinball::BlitAll()
+void ModuleScenePinball::DrawInfra()
 {
+	App->renderer->Blit(infraTex, 0, 0);
+}
 
-	App->renderer->Blit(backgroundTex, 0, 0);
+void ModuleScenePinball::DrawChains()
+{
+	p2List_item<PhysBody*>* c = chains.getFirst();
+	c = chains.getFirst();
 
-// Prepare for raycast ------------------------------------------------------
-	iPoint mouse;
-	mouse.x = App->input->GetMouseX();
-	mouse.y = App->input->GetMouseY();
-	int ray_hit = ray.DistanceTo(mouse);
-
-	fVector normal(0.0f, 0.0f);
-
-	// All draw functions ------------------------------------------------------
-	p2List_item<PhysBody*>* c = circles.getFirst();
-
-	while(c != NULL)
+	while (c != NULL)
 	{
 		int x, y;
 		c->data->GetPosition(x, y);
-		/*if(c->data->Contains(App->input->GetMouseX(), App->input->GetMouseY()))*/
-			App->renderer->Blit(circle, x, y, NULL, 1.0f, c->data->GetRotation());
+		App->renderer->Blit(chain, x, y, NULL, 1.0f, c->data->GetRotation());
 		c = c->next;
 	}
+}
 
-	c = boxes.getFirst();
+void ModuleScenePinball::DrawBounces()
+{
+	p2List_item<PhysBody*>* c = bounces.getFirst();
 
-	while(c != NULL)
+	while (c != NULL)
 	{
 		int x, y;
 		c->data->GetPosition(x, y);
-		App->renderer->Blit(box, x, y, NULL, 1.0f, c->data->GetRotation());
-		if(ray_on)
+		if (ray_on)
 		{
 			int hit = c->data->RayCast(ray.x, ray.y, mouse.x, mouse.y, normal.x, normal.y);
-			if(hit >= 0)
+			if (hit >= 0)
 				ray_hit = hit;
 		}
 		c = c->next;
-	}
-
-	c = ricks.getFirst();
-
-	while(c != NULL)
-	{
-		int x, y;
-		c->data->GetPosition(x, y);
-		App->renderer->Blit(rick, x, y, NULL, 1.0f, c->data->GetRotation());
-		c = c->next;
-	}
-
-	// ray -----------------
-	if(ray_on == true)
-	{
-		fVector destination(mouse.x-ray.x, mouse.y-ray.y);
-		destination.Normalize();
-		destination *= ray_hit;
-
-		App->renderer->DrawLine(ray.x, ray.y, ray.x + destination.x, ray.y + destination.y, 255, 255, 255);
-
-		if(normal.x != 0.0f)
-			App->renderer->DrawLine(ray.x + destination.x, ray.y + destination.y, ray.x + destination.x + normal.x * 25.0f, ray.y + destination.y + normal.y * 25.0f, 100, 255, 100);
 	}
 }
 
 void ModuleScenePinball::OnCollision(PhysBody* bodyA, PhysBody* bodyB)
 {
-	App->audio->PlayFx(bonus_fx);
+	// bodyA is internal of the Scene & bodyB is the ball always
+
 }
-// TODO 8: Now just define collision callback for the circle and play bonus_fx audio

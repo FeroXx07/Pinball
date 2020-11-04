@@ -165,3 +165,21 @@ bool ModuleAudio::PlayFx(unsigned int id, int repeat)
 
 	return ret;
 }
+
+bool ModuleAudio::UnloadFx(uint index)
+{
+	bool ret = false;
+
+	p2List_item<Mix_Chunk*>* list;
+	list = fx.getFirst();
+
+	fx.at(index, list->data);
+	if (list->data != NULL)
+	{
+		Mix_FreeChunk(list->data);
+		list->data = nullptr;
+		ret = true;
+	}
+
+	return ret;
+}

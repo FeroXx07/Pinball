@@ -56,6 +56,9 @@
     <ClInclude Include="p2Point.h">
       <Filter>Header Files\Containers</Filter>
     </ClInclude>
+    <ClInclude Include="ModuleBall.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">
@@ -89,6 +92,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ModuleScenePinball.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ModuleBall.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
