@@ -30,7 +30,7 @@ bool ModuleBall::Start()
 bool ModuleBall::LoadAssets()
 {
 	bool ret = true;
-	ballTexture = App->textures->Load("pinball/wheel.png");
+	ballTexture = App->textures->Load("pinball/wheel1.png");
 	supraTex = App->textures->Load("pinball/SupraPinball.png");
 	bonusFx = App->audio->LoadFx("pinball/bonus.wav");
 	return ret;
@@ -93,7 +93,7 @@ void ModuleBall::DrawBalls()
 		int x, y;
 		c->data->GetPosition(x, y);
 		/*if(c->data->Contains(App->input->GetMouseX(), App->input->GetMouseY()))*/
-		//App->renderer->Blit(circle, x, y, NULL, 1.0f, c->data->GetRotation());
+		App->renderer->Blit(ballTexture, x, y, NULL, 1.0f, c->data->GetRotation());
 		if (ray_on)
 		{
 			int hit = c->data->RayCast(ray.x, ray.y, mouse.x, mouse.y, normal.x, normal.y);

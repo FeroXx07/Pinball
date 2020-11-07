@@ -28,6 +28,12 @@ void ModuleScenePinball::LoadMap()
 
 	bounces.add(App->physics->CreateCircle(254, 144, 23, b2BodyType::b2_staticBody));
 	bounces.getLast()->data->listener = (Module*)this;
+
+	// 
+	App->physics->CreateRectangle(187, 94, 3, 18);
+	App->physics->CreateRectangle(209, 94, 3, 18);
+	App->physics->CreateRectangle(233, 94, 3, 18);
+	App->physics->CreateRectangle(255, 94, 3, 18);
 }
 
 bool ModuleScenePinball::LoadAssets()
@@ -39,6 +45,11 @@ bool ModuleScenePinball::LoadAssets()
 	chain = App->textures->Load("pinball/rick_head.png");
 	infraTex = App->textures->Load("pinball/InfraPinball.png");
 	bonus_fx = App->audio->LoadFx("pinball/bonus.wav");
+
+	App->physics->CreateChain(0, 0, wallsPoints, 312, b2BodyType::b2_staticBody);
+	App->physics->CreateChain(0, 0, rightPlate, 30, b2BodyType::b2_staticBody);
+	App->physics->CreateChain(0, 0, leftPlate, 36, b2BodyType::b2_staticBody);
+
 
 	return ret;
 }
@@ -258,7 +269,7 @@ void ModuleScenePinball::DebugCreate()
 
 	if (App->input->GetKey(SDL_SCANCODE_2) == KEY_DOWN)
 	{
-		boxes.add(App->physics->CreateRectangle(App->input->GetMouseX(), App->input->GetMouseY(), 100, 50));
+		boxes.add(App->physics->CreateRectangle(App->input->GetMouseX(), App->input->GetMouseY(), 100, 50, b2_dynamicBody));
 	}
 
 	if (App->input->GetKey(SDL_SCANCODE_3) == KEY_DOWN)
