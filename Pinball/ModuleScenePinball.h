@@ -4,7 +4,7 @@
 #include "p2Point.h"
 #include "Globals.h"
 
-
+class b2RevoluteJoint;
 class PhysBody;
 
 class ModuleScenePinball : public Module
@@ -59,4 +59,7 @@ private: // Raycast field
 
 	void PreRayCast();
 	void PostRayCast();
+
+public:
+	b2RevoluteJoint* revJoint;
 };

@@ -4,7 +4,7 @@
 #include "ModuleScenePinball.h"
 #include "ModuleInput.h"
 #include "ModuleTextures.h"
-#include "ModuleAudio.h"
+#include "Audio.h"
 #include "ModulePhysics.h"
 
 b2BodyType;
@@ -58,6 +58,28 @@ bool ModuleScenePinball::Start()
 
 	LoadMap();
 
+	PhysBody* pBox = App->physics->CreateRectangle(100, 200, 60, 20, b2BodyType::b2_dynamicBody);
+	PhysBody* pCircle = App->physics->CreateCircle(100, 200, 10, b2BodyType::b2_staticBody);
+	
+	b2RevoluteJointDef revDef;
+	//pBox->body->SetGravityScale(0.0f);
+	revDef.bodyA = pBox->body;
+	revDef.bodyB = pCircle->body;
+	revDef.collideConnected = false;
+
+	revDef.localAnchorA.Set(0.5f, 0);
+	revDef.localAnchorB.Set(0, 0);
+
+	revDef.enableLimit = true;
+	revDef.lowerAngle = -45 * DEGTORAD;
+	revDef.upperAngle = 45 * DEGTORAD;
+
+	revDef.enableMotor = true;
+	revDef.maxMotorTorque = 5;
+	revDef.motorSpeed = 90 * DEGTORAD;
+
+	revJoint = (b2RevoluteJoint*)App->physics->world->CreateJoint(&revDef);
+
 	return ret;
 }
 
@@ -78,6 +100,29 @@ update_status ModuleScenePinball::Update()
 {
 	
 	DebugCreate();
+
+	if (App->input->GetKey(SDL_SCANCODE_G) == KEY_DOWN)
+	{
+		//revJoint.to
+	}
+
+	float32 currentAngle = revJoint->GetJointAngle();
+	float32 lowerAngleLimit = revJoint->GetLowerLimit();
+	float32 upperAngleLimit = revJoint->GetUpperLimit();
+
+	bool isLowerAngleLimit = revJoint->GetJointAngle() <= revJoint->GetLowerLimit();
+	bool isUpperAngleLimit = revJoint->GetJointAngle() >= revJoint->GetUpperLimit();
+
+	if (isLowerAngleLimit)
+	{
+		revJoint->SetMotorSpeed(90 * DEGTORAD);
+	}
+	if (isUpperAngleLimit)
+	{
+		revJoint->SetMotorSpeed(-90 * DEGTORAD);
+	}
+	
+
 
 	// AL booleans false -- > Activate the array/list of chains of all map
 	

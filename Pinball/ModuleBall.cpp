@@ -4,7 +4,7 @@
 #include "ModuleBall.h"
 #include "ModuleInput.h"
 #include "ModuleTextures.h"
-#include "ModuleAudio.h"
+#include "Audio.h"
 #include "ModulePhysics.h"
 
 
@@ -100,6 +100,12 @@ void ModuleBall::DrawBalls()
 			if (hit >= 0)
 				ray_hit = hit;
 		}
+		b2Vec2 vel = c->data->body->GetLinearVelocity();
+		vel.Normalize();
+		iPoint pos = { x,y };
+		App->renderer->DrawLine(pos.x+8, pos.y+8, pos.x + vel.x * 25, pos.y + vel.y * 25, 250, 0, 0);
+		
+
 		c = c->next;
 	}
 }

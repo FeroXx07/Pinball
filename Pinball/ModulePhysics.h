@@ -47,14 +47,16 @@ public:
 	bool CleanUp();
 
 	PhysBody* CreateCircle(int x, int y, int radius, b2BodyType type = b2BodyType::b2_dynamicBody);
-	PhysBody* CreateRectangle(int x, int y, int width, int height);
+	PhysBody* CreateRectangle(int x, int y, int width, int height, b2BodyType type = b2BodyType::b2_dynamicBody);
 	PhysBody* CreateRectangleSensor(int x, int y, int width, int height);
 	PhysBody* CreateChain(int x, int y, int* points, int size);
 
 	void BeginContact(b2Contact* contact);
+
+	b2World* world;
 private:
 
 	b2ContactListener* listener;
 	bool debug;
-	b2World* world;
+	
 };
