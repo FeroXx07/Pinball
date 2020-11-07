@@ -7,11 +7,12 @@
 #include "Audio.h"
 #include "ModulePhysics.h"
 
+
 b2BodyType;
 
 ModuleScenePinball::ModuleScenePinball(Application* app, bool start_enabled) : Module(app, start_enabled)
 {
-	bounce = box = chain = NULL;
+	paddlesTex = chain = NULL;
 	ray_on = false;
 	sensed = false;
 }
@@ -33,13 +34,68 @@ bool ModuleScenePinball::LoadAssets()
 {
 	bool ret = true;
 
-	bounce = App->textures->Load("pinball/wheel.png");
-	box = App->textures->Load("pinball/crate.png");
+	paddlesTex = App->textures->Load("pinball/wheel.png");
 	chain = App->textures->Load("pinball/rick_head.png");
 	infraTex = App->textures->Load("pinball/InfraPinball.png");
 	bonus_fx = App->audio->LoadFx("pinball/bonus.wav");
 
 	return ret;
+}
+
+
+void ModuleScenePinball::LoadLeftPaddle(int x, int y)
+{
+	// -------------- Left Paddle Creation --------------------------------
+	PhysBody* pBoxLeft = App->physics->CreateRectangle(x, y, 60, 20, b2BodyType::b2_dynamicBody);
+	PhysBody* pCircleLeft = App->physics->CreateCircle(x, y, 10, b2BodyType::b2_staticBody);
+
+	b2RevoluteJointDef revDefLeft;
+	//pBox->body->SetGravityScale(0.0f);
+	revDefLeft.bodyA = pBoxLeft->body;
+	revDefLeft.bodyB = pCircleLeft->body;
+	revDefLeft.collideConnected = false;
+
+	revDefLeft.localAnchorA.Set(-0.5f, 0);
+	revDefLeft.localAnchorB.Set(0, 0);
+
+	revDefLeft.enableLimit = true;
+	revDefLeft.lowerAngle = -45 * DEGTORAD;
+	revDefLeft.upperAngle = 45 * DEGTORAD;
+
+	revDefLeft.enableMotor = false;
+	revDefLeft.maxMotorTorque = 5;
+	paddleSpeed = 270 * DEGTORAD;
+	revDefLeft.motorSpeed = paddleSpeed;
+
+	leftPaddle = (b2RevoluteJoint*)App->physics->world->CreateJoint(&revDefLeft);
+	totalPaddles.add(leftPaddle);
+}
+void ModuleScenePinball::LoadRightPaddle(int x, int y)
+{
+	// -------------- Right Paddle Creation --------------------------------
+	PhysBody* pBoxRight = App->physics->CreateRectangle(x, y, 60, 20, b2BodyType::b2_dynamicBody);
+	PhysBody* pCircleRight = App->physics->CreateCircle(x, y, 10, b2BodyType::b2_staticBody);
+
+	b2RevoluteJointDef revDefRight;
+	//pBox->body->SetGravityScale(0.0f);
+	revDefRight.bodyA = pBoxRight->body;
+	revDefRight.bodyB = pCircleRight->body;
+	revDefRight.collideConnected = false;
+
+	revDefRight.localAnchorA.Set(0.5f, 0);
+	revDefRight.localAnchorB.Set(0, 0);
+
+	revDefRight.enableLimit = true;
+	revDefRight.lowerAngle = -45 * DEGTORAD;
+	revDefRight.upperAngle = 45 * DEGTORAD;
+
+	revDefRight.enableMotor = false;
+	revDefRight.maxMotorTorque = 5;
+	paddleSpeed = 270 * DEGTORAD;
+	revDefRight.motorSpeed = paddleSpeed;
+
+	rightPaddle = (b2RevoluteJoint*)App->physics->world->CreateJoint(&revDefRight);
+	totalPaddles.add(rightPaddle);
 }
 
 bool ModuleScenePinball::Start()
@@ -57,29 +113,10 @@ bool ModuleScenePinball::Start()
 	specialLeftToRight = false;
 
 	LoadMap();
-
-	PhysBody* pBox = App->physics->CreateRectangle(100, 200, 60, 20, b2BodyType::b2_dynamicBody);
-	PhysBody* pCircle = App->physics->CreateCircle(100, 200, 10, b2BodyType::b2_staticBody);
 	
-	b2RevoluteJointDef revDef;
-	//pBox->body->SetGravityScale(0.0f);
-	revDef.bodyA = pBox->body;
-	revDef.bodyB = pCircle->body;
-	revDef.collideConnected = false;
-
-	revDef.localAnchorA.Set(0.5f, 0);
-	revDef.localAnchorB.Set(0, 0);
-
-	revDef.enableLimit = true;
-	revDef.lowerAngle = -45 * DEGTORAD;
-	revDef.upperAngle = 45 * DEGTORAD;
-
-	revDef.enableMotor = true;
-	revDef.maxMotorTorque = 5;
-	revDef.motorSpeed = 90 * DEGTORAD;
-
-	revJoint = (b2RevoluteJoint*)App->physics->world->CreateJoint(&revDef);
-
+	// Creates the both paddles
+	LoadLeftPaddle(95, 586);
+	LoadRightPaddle(217, 586);
 	return ret;
 }
 
@@ -98,32 +135,12 @@ bool ModuleScenePinball::CleanUp()
 // Update: draw background
 update_status ModuleScenePinball::Update()
 {
-	
 	DebugCreate();
 
-	if (App->input->GetKey(SDL_SCANCODE_G) == KEY_DOWN)
-	{
-		//revJoint.to
-	}
+	PaddleInput();
 
-	float32 currentAngle = revJoint->GetJointAngle();
-	float32 lowerAngleLimit = revJoint->GetLowerLimit();
-	float32 upperAngleLimit = revJoint->GetUpperLimit();
-
-	bool isLowerAngleLimit = revJoint->GetJointAngle() <= revJoint->GetLowerLimit();
-	bool isUpperAngleLimit = revJoint->GetJointAngle() >= revJoint->GetUpperLimit();
-
-	if (isLowerAngleLimit)
-	{
-		revJoint->SetMotorSpeed(90 * DEGTORAD);
-	}
-	if (isUpperAngleLimit)
-	{
-		revJoint->SetMotorSpeed(-90 * DEGTORAD);
-	}
+	PaddleLogic();
 	
-
-
 	// AL booleans false -- > Activate the array/list of chains of all map
 	
 	// If one boolean is true -- > Deactivate whole 
@@ -134,10 +151,64 @@ update_status ModuleScenePinball::Update()
 	DrawInfra();
 	DrawBounces();
 	DrawChains();
-
+	DrawPaddlles();
 	PostRayCast();
 
 	return UPDATE_CONTINUE;
+}
+
+void ModuleScenePinball::PaddleInput()
+{
+	if (App->input->GetKey(SDL_SCANCODE_H) == KEY_DOWN)
+	{
+		rightPaddle->GetBodyA()->ApplyTorque(paddleSpeed * 30, true);
+	}
+
+	if (App->input->GetKey(SDL_SCANCODE_G) == KEY_DOWN)
+	{
+		leftPaddle->GetBodyA()->ApplyTorque(-paddleSpeed * 30, true);
+	}
+}
+
+void ModuleScenePinball::PaddleLogic()
+{
+	// Checks and iterates all limits of the paddles
+	p2List_item<b2RevoluteJoint*>*list;
+	list = totalPaddles.getFirst();
+	while (list != NULL)
+	{
+		float32 currentAngle = list->data->GetJointAngle();
+		float32 lowerAngleLimit = list->data->GetLowerLimit();
+		float32 upperAngleLimit = list->data->GetUpperLimit();
+
+		bool isLowerAngleLimit = list->data->GetJointAngle() <= list->data->GetLowerLimit();
+		bool isUpperAngleLimit = list->data->GetJointAngle() >= list->data->GetUpperLimit();
+
+		if (isLowerAngleLimit)
+		{
+			list->data->SetMotorSpeed(paddleSpeed);
+		}
+		if (isUpperAngleLimit)
+		{
+			list->data->SetMotorSpeed(-paddleSpeed);
+		}
+
+		list = list->next;
+	}
+}
+
+void ModuleScenePinball::DrawPaddlles()
+{
+	/*PhysBody* toDraw = leftPaddle;
+	if ( != NULL)
+	{
+		int x, y;
+		c->data->GetPosition(x, y);
+		App->renderer->Blit(chain, x, y, NULL, 1.0f, c->data->GetRotation());
+		c = c->next;
+	}*/
+
+
 }
 
 void ModuleScenePinball::PreRayCast()

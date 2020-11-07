@@ -25,8 +25,7 @@ public:
 	PhysBody* sensor;
 	bool sensed;
 
-	SDL_Texture* bounce;
-	SDL_Texture* box;
+	SDL_Texture* paddlesTex;
 	SDL_Texture* chain;
 	SDL_Texture* infraTex;
 
@@ -45,9 +44,14 @@ private:
 private:
 	bool LoadAssets();
 	void LoadMap();
+	void LoadLeftPaddle(int x, int y);
+	void LoadRightPaddle(int x, int y);
+
 	void DrawBounces();
 	void DrawChains();
 	void DrawInfra();
+	void DrawPaddlles();
+
 	void DebugCreate();
 
 private: // Raycast field
@@ -61,5 +65,10 @@ private: // Raycast field
 	void PostRayCast();
 
 public:
-	b2RevoluteJoint* revJoint;
+	b2RevoluteJoint* rightPaddle;
+	b2RevoluteJoint* leftPaddle;
+	p2List<b2RevoluteJoint*> totalPaddles;
+	float paddleSpeed;
+	void PaddleInput();
+	void PaddleLogic();
 };
