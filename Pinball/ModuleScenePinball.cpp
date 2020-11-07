@@ -12,7 +12,7 @@ b2BodyType;
 
 ModuleScenePinball::ModuleScenePinball(Application* app, bool start_enabled) : Module(app, start_enabled)
 {
-	paddlesTex = chain = NULL;
+	leftPaddleTex = chain = NULL;
 	ray_on = false;
 	sensed = false;
 }
@@ -34,7 +34,8 @@ bool ModuleScenePinball::LoadAssets()
 {
 	bool ret = true;
 
-	paddlesTex = App->textures->Load("pinball/wheel.png");
+	leftPaddleTex = App->textures->Load("pinball/LeftStick.png");
+	rightPaddleTex = App->textures->Load("pinball/RightStick.png");
 	chain = App->textures->Load("pinball/rick_head.png");
 	infraTex = App->textures->Load("pinball/InfraPinball.png");
 	bonus_fx = App->audio->LoadFx("pinball/bonus.wav");
@@ -46,7 +47,7 @@ bool ModuleScenePinball::LoadAssets()
 void ModuleScenePinball::LoadLeftPaddle(int x, int y)
 {
 	// -------------- Left Paddle Creation --------------------------------
-	PhysBody* pBoxLeft = App->physics->CreateRectangle(x, y, 60, 20, b2BodyType::b2_dynamicBody);
+	PhysBody* pBoxLeft = App->physics->CreateRectangle(x, y, 56, 10, b2BodyType::b2_dynamicBody);
 	PhysBody* pCircleLeft = App->physics->CreateCircle(x, y, 10, b2BodyType::b2_staticBody);
 
 	b2RevoluteJointDef revDefLeft;
@@ -59,7 +60,9 @@ void ModuleScenePinball::LoadLeftPaddle(int x, int y)
 	revDefLeft.localAnchorB.Set(0, 0);
 
 	revDefLeft.enableLimit = true;
-	revDefLeft.lowerAngle = -45 * DEGTORAD;
+	/*revDefLeft.lowerAngle = -45 * DEGTORAD;
+	revDefLeft.upperAngle = 45 * DEGTORAD;*/
+	revDefLeft.lowerAngle = -25 * DEGTORAD;
 	revDefLeft.upperAngle = 45 * DEGTORAD;
 
 	revDefLeft.enableMotor = false;
@@ -73,11 +76,11 @@ void ModuleScenePinball::LoadLeftPaddle(int x, int y)
 void ModuleScenePinball::LoadRightPaddle(int x, int y)
 {
 	// -------------- Right Paddle Creation --------------------------------
-	PhysBody* pBoxRight = App->physics->CreateRectangle(x, y, 60, 20, b2BodyType::b2_dynamicBody);
+	PhysBody* pBoxRight = App->physics->CreateRectangle(x, y, 56, 10, b2BodyType::b2_dynamicBody);
 	PhysBody* pCircleRight = App->physics->CreateCircle(x, y, 10, b2BodyType::b2_staticBody);
 
 	b2RevoluteJointDef revDefRight;
-	//pBox->body->SetGravityScale(0.0f);
+	//pBoxRight->body->SetGravityScale(0.0f);
 	revDefRight.bodyA = pBoxRight->body;
 	revDefRight.bodyB = pCircleRight->body;
 	revDefRight.collideConnected = false;
@@ -86,8 +89,8 @@ void ModuleScenePinball::LoadRightPaddle(int x, int y)
 	revDefRight.localAnchorB.Set(0, 0);
 
 	revDefRight.enableLimit = true;
-	revDefRight.lowerAngle = -45 * DEGTORAD;
-	revDefRight.upperAngle = 45 * DEGTORAD;
+	revDefRight.lowerAngle =  -45 * DEGTORAD;
+	revDefRight.upperAngle = 25 * DEGTORAD;
 
 	revDefRight.enableMotor = false;
 	revDefRight.maxMotorTorque = 5;
@@ -116,7 +119,7 @@ bool ModuleScenePinball::Start()
 	
 	// Creates the both paddles
 	LoadLeftPaddle(95, 586);
-	LoadRightPaddle(217, 586);
+	LoadRightPaddle(217+4, 586);
 	return ret;
 }
 
@@ -199,15 +202,23 @@ void ModuleScenePinball::PaddleLogic()
 
 void ModuleScenePinball::DrawPaddlles()
 {
-	/*PhysBody* toDraw = leftPaddle;
-	if ( != NULL)
+	PhysBody* toDraw = (PhysBody*)leftPaddle->GetBodyA()->GetUserData();
+	if ( toDraw != NULL)
 	{
 		int x, y;
-		c->data->GetPosition(x, y);
-		App->renderer->Blit(chain, x, y, NULL, 1.0f, c->data->GetRotation());
-		c = c->next;
-	}*/
+		toDraw->GetPosition(x, y);
+		App->renderer->Blit(leftPaddleTex, x, y-20, NULL, 1.0f, toDraw->GetRotation()-35.0f);
+	}
 
+	toDraw = NULL;
+
+	toDraw = (PhysBody*)rightPaddle->GetBodyA()->GetUserData();
+	if (toDraw != NULL)
+	{
+		int x, y;
+		toDraw->GetPosition(x, y);
+		App->renderer->Blit(rightPaddleTex, x-5, y - 20, NULL, 1.0f, toDraw->GetRotation() + 35.0f);
+	}
 
 }
 

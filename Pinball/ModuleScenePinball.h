@@ -25,7 +25,8 @@ public:
 	PhysBody* sensor;
 	bool sensed;
 
-	SDL_Texture* paddlesTex;
+	SDL_Texture* leftPaddleTex;
+	SDL_Texture* rightPaddleTex;
 	SDL_Texture* chain;
 	SDL_Texture* infraTex;
 
