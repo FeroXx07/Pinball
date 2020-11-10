@@ -7,6 +7,22 @@
 class b2RevoluteJoint;
 class PhysBody;
 
+class Sensors
+{
+public:
+	Sensors();
+	~Sensors(){}
+
+public:
+	PhysBody* sensorBody = NULL;
+	PhysBody* chainBody = NULL;
+	iPoint pos;
+	SDL_Texture* texture = NULL;
+	bool isActive = false;
+	Module* listener;
+	
+};
+
 class ModuleScenePinball : public Module
 {
 public:
@@ -20,7 +36,6 @@ public:
 public:
 	p2List<PhysBody*> bounces;
 	p2List<PhysBody*> boxes;
-	p2List<PhysBody*> chains;
 
 	PhysBody* sensor;
 	bool sensed;
@@ -40,15 +55,19 @@ private:
 	bool specialLeftToRight = false;
 
 private:
+	// Start field
 	bool LoadAssets();
 	void LoadMap();
 	void LoadLeftPaddle(int x, int y);
 	void LoadRightPaddle(int x, int y);
+	void LoadSensors();
 
+	// Draw field
 	void DrawBounces();
-	void DrawChains();
+
 	void DrawInfra();
 	void DrawPaddlles();
+	void DrawBonusLetters();
 
 	void DebugCreate();
 
@@ -62,13 +81,12 @@ private: // Raycast field
 	void PreRayCast();
 	void PostRayCast();
 
-public:
+public: // Paddle field
 	b2RevoluteJoint* rightPaddle;
 	b2RevoluteJoint* leftPaddle;
 	p2List<b2RevoluteJoint*> totalPaddles;
 	float paddleSpeed;
 	void PaddleInput();
-	void PaddleLogic();
 
 public: // Collider points
 	int wallsPoints[312] = {
@@ -266,4 +284,59 @@ public: // Collider points
 	71, 492,
 	65, 478
 	};
+	int rightRamp[12] = {
+	289, 464,
+	289, 528,
+	220, 578,
+	224, 583,
+	292, 536,
+	292, 464
+	};
+	int leftRamp[12] = {
+	23, 464,
+	26, 464,
+	27, 529,
+	97, 578,
+	90, 583,
+	23, 536
+	};
+	int firstRec[10] = {
+	329, 603,
+	329, 212,
+	312, 212,
+	312, 605,
+	329, 605
+	};
+	int secondRec[10] = {
+	312, 210,
+	312, 152,
+	330, 152,
+	330, 211,
+	315, 211
+	};
+	int thirdRec[8] = {
+	311, 152,
+	330, 150,
+	323, 105,
+	313, 144
+	};
+
+public: // Bonus letters field
+	bool bonusLetters[9];
+	iPoint bonusLettersPos[9];
+	int bonusLetterTimer[9];
+	p2List<SDL_Texture*> bonusLettersTex;
+
+	void SetAllBonusToFalse(); // Sets all bonus bools to false
+	void StartBonusPointsPos(); // Sets positions to the textures to be drawn when true
+	void BonusLettersLogic(); // Countdown to disable the bools once true
+	p2List< PhysBody*>bonusSensors;
+
+public: // Map sensors field
+	p2List< Sensors*>mapSensors;
+	void ChangeMap();
+	PhysBody* firstRecChain;
+	PhysBody* secondRecChain;
+	PhysBody* thirdRecChain;
+	Sensors* CreateSensor(PhysBody* b, PhysBody* c, iPoint p, Module* l);
 };

@@ -14,6 +14,7 @@ ModuleBall::ModuleBall(Application* app, bool start_enabled) : Module(app, start
 	ballTexture = NULL;
 	ray_on = false;
 	sensed = false;
+	debug = true;
 }
 
 ModuleBall::~ModuleBall()
@@ -82,6 +83,30 @@ void ModuleBall::DebugCreate()
 		circles.add(App->physics->CreateCircle(App->input->GetMouseX(), App->input->GetMouseY(), 8));
 		circles.getLast()->data->listener = (Module*)this;
 	}
+
+	if (App->input->GetKey(SDL_SCANCODE_F1) == KEY_DOWN)
+	{
+		debug = !debug;
+	}
+
+	if (App->input->GetKey(SDL_SCANCODE_DOWN) == KEY_DOWN) // Provisional kicker
+	{
+		p2List_item<PhysBody*>* list;
+		list = circles.getFirst();
+		for (int i = 0; i < circles.count(); ++i)
+		{
+			if (list != NULL)
+			{
+				b2Vec2 force = { 0.0f,-100.0f };
+				list->data->body->ApplyForceToCenter(force, true);
+			}
+
+			if (i == circles.count() - 1)
+				break;
+
+			list = list->next;
+		}
+	}
 }
 
 void ModuleBall::DrawBalls()
@@ -100,12 +125,13 @@ void ModuleBall::DrawBalls()
 			if (hit >= 0)
 				ray_hit = hit;
 		}
-		b2Vec2 vel = c->data->body->GetLinearVelocity();
-		vel.Normalize();
-		iPoint pos = { x,y };
-		App->renderer->DrawLine(pos.x+8, pos.y+8, pos.x + vel.x * 25, pos.y + vel.y * 25, 250, 0, 0);
-		
-
+		if (debug)
+		{
+			b2Vec2 vel = c->data->body->GetLinearVelocity();
+			vel.Normalize();
+			iPoint pos = { x,y };
+			App->renderer->DrawLine(pos.x + 8, pos.y + 8, pos.x + vel.x * 25, pos.y + vel.y * 25, 250, 0, 0);
+		}
 		c = c->next;
 	}
 }
@@ -142,7 +168,7 @@ void ModuleBall::PostRayCast()
 
 void ModuleBall::OnCollision(PhysBody* bodyA, PhysBody* bodyB)
 {
-	App->audio->PlayFx(bonusFx);
+	//App->audio->PlayFx(bonusFx);
 	
 }
 // TODO 8: Now just define collision callback for the circle and play bonus_fx audio
