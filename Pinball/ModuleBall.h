@@ -48,4 +48,8 @@ private:
 
 	void PreRayCast();
 	void PostRayCast();
+
+public:
+	bool dead = false;
+	void ResetBallState();
 };

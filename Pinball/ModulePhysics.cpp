@@ -303,7 +303,7 @@ bool ModulePhysics::CleanUp()
 
 	// Delete the whole physics world!
 	delete world;
-
+	
 	return true;
 }
 
@@ -392,6 +392,7 @@ void ModulePhysics::BeginContact(b2Contact* contact)
 
 	if (physBodyB && physBodyB->listener != NULL)
 		physBodyB->listener->OnCollision(physBodyB, physBodyA);
+
 }
 
 

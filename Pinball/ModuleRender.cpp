@@ -2,6 +2,7 @@
 #include "Application.h"
 #include "ModuleWindow.h"
 #include "ModuleRender.h"
+#include "ModuleInput.h"
 #include <math.h>
 
 ModuleRender::ModuleRender(Application* app, bool start_enabled) : Module(app, start_enabled)
@@ -63,8 +64,8 @@ update_status ModuleRender::Update()
 		App->renderer->camera.x += speed;
 
 	if(App->input->GetKey(SDL_SCANCODE_RIGHT) == KEY_REPEAT)
-		App->renderer->camera.x -= speed;
-	*/
+		App->renderer->camera.x -= speed;*/
+	
 	return UPDATE_CONTINUE;
 }
 

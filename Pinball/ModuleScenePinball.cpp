@@ -40,6 +40,7 @@ Sensors* ModuleScenePinball::CreateSensor(PhysBody* b, PhysBody* c, iPoint p, Mo
 	return sensor;
 }
 
+
 void ModuleScenePinball::LoadMap()
 {
 	// Create the three boing balls
@@ -56,15 +57,14 @@ void ModuleScenePinball::LoadMap()
 	App->physics->CreateRectangle(255, 94, 3, 18);
 
 	// The base walls, and side Plates
-	App->physics->CreateChain(0, 0, wallsPoints, 312, b2BodyType::b2_staticBody);
+	App->physics->CreateChain(0, 0, wallsPoints, 160, b2BodyType::b2_staticBody);
 	App->physics->CreateChain(0, 0, rightPlate, 30, b2BodyType::b2_staticBody);
 	App->physics->CreateChain(0, 0, leftPlate, 36, b2BodyType::b2_staticBody);
 	App->physics->CreateChain(0, 0, rightRamp, 12, b2BodyType::b2_staticBody);
 	App->physics->CreateChain(0, 0, leftRamp, 12, b2BodyType::b2_staticBody);
 
-	firstRecChain = App->physics->CreateChain(0, 0, firstRec, 10, b2BodyType::b2_staticBody);
-	secondRecChain = App->physics->CreateChain(0, 0, secondRec, 10, b2BodyType::b2_staticBody);
-	thirdRecChain = App->physics->CreateChain(0, 0, thirdRec, 8, b2BodyType::b2_staticBody);
+	exitKickerRect = App->physics->CreateChain(0, 0, exitRect, 10, b2BodyType::b2_staticBody);
+	exitKickerRect->body->SetActive(false);
 
 }
 
@@ -131,12 +131,11 @@ void ModuleScenePinball::LoadSensors()
 	bonusSensors.getLast()->data->body->GetFixtureList()->SetSensor(true);
 	bonusSensors.getLast()->data->listener = this;
 	
-	//Sensors* a = &(Sensors(App->physics->CreateRectangle(322, 233, 5, 5, b2BodyType::b2_staticBody), firstRecChain, iPoint(322, 233), (Module*)this));
-	//mapSensors.add(a);
-	//mapSensors.add(&(Sensors(App->physics->CreateRectangle(324, 172, 5, 5, b2BodyType::b2_staticBody),secondRecChain, iPoint(324, 172), (Module*)this)));
-	Sensors* a = CreateSensor(App->physics->CreateRectangle(322, 233, 5, 5, b2BodyType::b2_staticBody), firstRecChain, iPoint(322, 233), (Module*)this);
+	// Exit sensor
+	Sensors* a = CreateSensor(App->physics->CreateRectangle(309, 102, 5, 5, b2BodyType::b2_staticBody), exitKickerRect, iPoint(309, 102), (Module*)this);
 	mapSensors.add(a);
-	Sensors* b = CreateSensor(App->physics->CreateRectangle(324, 172, 5, 5, b2BodyType::b2_staticBody), secondRecChain, iPoint(324, 172), (Module*)this);
+	// Death sensor
+	Sensors* b = CreateSensor(App->physics->CreateRectangle(155, 641, 120, 40, b2BodyType::b2_staticBody), NULL, iPoint(155, 641), (Module*)App->ball);
 	mapSensors.add(b);
 }
 
@@ -261,7 +260,7 @@ update_status ModuleScenePinball::Update()
 	BonusLettersLogic();
 	// AL booleans false -- > Activate the array/list of chains of all map
 	// Map Sensor check
-	ChangeMap();
+	SensorLogic();
 	// If one boolean is true -- > Deactivate whole 
 		// Activate bodies to the corresponding boolean
 	
@@ -277,23 +276,21 @@ update_status ModuleScenePinball::Update()
 	return UPDATE_CONTINUE;
 }
 
-void ModuleScenePinball::ChangeMap()
+void ModuleScenePinball::SensorLogic()
 {
 	p2List_item< Sensors*>* sensorsList;
+
+	// Exit kicker Sensor check
 	sensorsList = mapSensors.getFirst();
-	for (int i = 0; i < mapSensors.count(); ++i)
+	mapSensors.at(0, sensorsList->data);
+	if (sensorsList->data->isActive == true)
 	{
-		if (sensorsList->data->isActive == true)
+		if (sensorsList->data->chainBody->body->IsActive() == false)
 		{
-			sensorsList->data->chainBody->body->SetActive(false);
-			LOG("SENSOR %d is TRUE", i);
+			sensorsList->data->chainBody->body->SetActive(true);
 		}
-
-		if (i == mapSensors.count() - 1)
-			break;
-
-		sensorsList = sensorsList->next;
 	}
+
 }
 
 void ModuleScenePinball::PaddleInput()

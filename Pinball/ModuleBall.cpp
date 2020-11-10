@@ -6,7 +6,7 @@
 #include "ModuleTextures.h"
 #include "Audio.h"
 #include "ModulePhysics.h"
-
+#include "ModuleScenePinball.h"
 
 
 ModuleBall::ModuleBall(Application* app, bool start_enabled) : Module(app, start_enabled)
@@ -55,9 +55,7 @@ update_status ModuleBall::Update()
 
 
 	// <<<< LOGIC? >>>>
-
-
-
+	ResetBallState();
 	// <<<< DRAW >>>>
 	PreRayCast();
 
@@ -97,7 +95,7 @@ void ModuleBall::DebugCreate()
 		{
 			if (list != NULL)
 			{
-				b2Vec2 force = { 0.0f,-100.0f };
+				b2Vec2 force = { 0.0f,-75.0f };
 				list->data->body->ApplyForceToCenter(force, true);
 			}
 
@@ -118,7 +116,7 @@ void ModuleBall::DrawBalls()
 		int x, y;
 		c->data->GetPosition(x, y);
 		/*if(c->data->Contains(App->input->GetMouseX(), App->input->GetMouseY()))*/
-		App->renderer->Blit(ballTexture, x, y, NULL, 1.0f, c->data->GetRotation());
+		if (ballTexture !=NULL)App->renderer->Blit(ballTexture, x, y, NULL, 1.0f, c->data->GetRotation());
 		if (ray_on)
 		{
 			int hit = c->data->RayCast(ray.x, ray.y, mouse.x, mouse.y, normal.x, normal.y);
@@ -166,9 +164,34 @@ void ModuleBall::PostRayCast()
 	}
 }
 
+void ModuleBall::ResetBallState()
+{
+	p2List_item<PhysBody*>* list;
+	list = circles.getLast();
+	int x = 0, y = 0;
+	LOG("There are %d balls!!!", circles.count());
+	if (dead)
+	{
+		dead = false;
+		App->scene_pinball->mapSensors.getFirst()->data->chainBody->body->SetActive(false);
+
+		b2Vec2 startPos = { PIXEL_TO_METERS(319.0f),PIXEL_TO_METERS(585.0f) };
+		if (list != NULL)
+			list->data->body->SetTransform(startPos, list->data->GetRotation());
+
+	}
+	if (list != NULL)
+		list->data->GetPosition(x, y);
+	LOG("Ball pos is %d %d", x, y);
+}
+
 void ModuleBall::OnCollision(PhysBody* bodyA, PhysBody* bodyB)
 {
 	//App->audio->PlayFx(bonusFx);
-	
+	if (bodyA->body->GetFixtureList()->IsSensor())
+	{
+		LOG("DEAD!!!!!!!!!");
+		dead = true;
+	}
 }
 // TODO 8: Now just define collision callback for the circle and play bonus_fx audio
