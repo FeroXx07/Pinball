@@ -19,8 +19,7 @@ public:
 
 public:
 	p2List<PhysBody*> circles;
-	
-
+	bool debug;
 	PhysBody* sensor;
 	bool sensed;
 	SDL_Texture* ballTexture;

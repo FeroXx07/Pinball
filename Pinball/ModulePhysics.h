@@ -55,8 +55,14 @@ public:
 
 	b2World* world;
 private:
-
 	b2ContactListener* listener;
 	bool debug;
 	
+public:
+	// Mouse joint debug
+	b2MouseJoint* mouseJoint;
+	b2Body* bodyClicked = NULL;
+	b2Vec2 mousePosition = { 0,0 };
+	int InputMouseJoint(b2Body*b);
+	void UpdateMouseJoint();
 };
