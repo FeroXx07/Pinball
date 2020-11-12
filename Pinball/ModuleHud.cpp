@@ -35,7 +35,8 @@ bool ModuleHud::Start()
 	//lightBlueFont = App->fonts->Load("Assets/Fonts/Fonts_LIGHTBLUE.png", lookupTableTextAndLives, 1);
 	//darkBlueFont = App->fonts->Load("Assets/Fonts/Fonts_DARKBLUE.png", lookupTableNumbers, 1);
 	score = 0;
-	highScore = 800;
+	previousScore = 0;
+	highScore = 0;
 	return ret;
 }
 

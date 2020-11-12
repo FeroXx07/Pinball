@@ -98,11 +98,12 @@ void ModuleBall::RestartGame()
 
 	// SHOW GAME OVER 
 	LOG("LOSE :(");
+
+	// PRESS SOMETHING TO RESTART ---> lives = 3;
 	if (App->input->GetKey(SDL_SCANCODE_SPACE) == KEY_DOWN)
 	{
 		lives = 3;
 	}
-	// PRESS SOMETHING TO RESTART ---> lives = 3;
 
 	lost = false;
 }
