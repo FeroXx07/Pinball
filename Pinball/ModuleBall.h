@@ -19,6 +19,7 @@ public:
 
 public:
 	p2List<PhysBody*> circles;
+	PhysBody* ball;
 	bool debug;
 	PhysBody* sensor;
 	bool sensed;
@@ -35,9 +36,11 @@ private:
 	void DrawBalls();
 
 	// Logic functions
+	void CapBallVel();
 
 	// Debug functions
 	void DebugCreate();
+	void LogBall();
 
 private:
 	iPoint mouse;
@@ -51,5 +54,13 @@ private:
 
 public:
 	bool dead = false;
+	bool lost = false;
+
+	void RestartGame();
+	uint lives = 3;
+
+	bool isBounce = false;
+	int bounceTimer = 0;
+	void BounceLogic();
 	void ResetBallState();
 };

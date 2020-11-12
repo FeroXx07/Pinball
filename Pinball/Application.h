@@ -13,6 +13,8 @@ class ModulePlayer;
 class ModuleScenePinball;
 class ModulePhysics;
 class ModuleBall;
+class ModuleFonts;
+class ModuleHud;
 
 class Application
 {
@@ -26,6 +28,8 @@ public:
 	ModuleScenePinball* scene_pinball;
 	ModulePhysics* physics;
 	ModuleBall* ball;
+	ModuleFonts* fonts;
+	ModuleHud* hud;
 private:
 
 	p2List<Module*> list_modules;
