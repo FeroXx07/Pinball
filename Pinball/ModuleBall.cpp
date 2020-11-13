@@ -7,7 +7,9 @@
 #include "Audio.h"
 #include "ModulePhysics.h"
 #include "ModuleScenePinball.h"
+#include "ModuleHud.h"
 
+#define MAXBALLVEL 8.0f
 
 ModuleBall::ModuleBall(Application* app, bool start_enabled) : Module(app, start_enabled)
 {
@@ -15,6 +17,7 @@ ModuleBall::ModuleBall(Application* app, bool start_enabled) : Module(app, start
 	ray_on = false;
 	sensed = false;
 	debug = true;
+	
 }
 
 ModuleBall::~ModuleBall()
@@ -25,6 +28,15 @@ bool ModuleBall::Start()
 {
 	LOG("Loading Intro assets");
 	bool ret = LoadAssets();
+	lives = 3;
+
+	b2Vec2 startPos = { 319.0f,585.0f };
+	if (ball == NULL)
+	{
+		ball = App->physics->CreateCircle(startPos.x, startPos.y, 8);
+		ball->listener = (Module*)this;
+	}
+	lost = false;
 	return ret;
 }
 
@@ -50,12 +62,26 @@ bool ModuleBall::CleanUp()
 
 update_status ModuleBall::Update()
 {
-	// <<<< INPUT >>>>
-	DebugCreate();
+	if (lives > 0)
+	{
+		// <<<< INPUT >>>>
+		DebugCreate();
 
+		// <<<< LOGIC? >>>>
+		ResetBallState();
+		CapBallVel();
+		BounceLogic();
+		LogBall();
 
-	// <<<< LOGIC? >>>>
-	ResetBallState();
+		
+	}
+	else
+	{
+		lost = true;
+		
+	}
+	RestartGame();
+
 	// <<<< DRAW >>>>
 	PreRayCast();
 
@@ -63,8 +89,42 @@ update_status ModuleBall::Update()
 	DrawSupra();
 
 	PostRayCast();
-
 	return UPDATE_CONTINUE;
+}
+void ModuleBall::RestartGame()
+{
+	// CHANGE SCORE,PREVIOUS SCORE, HIGHSCORE
+
+
+	// SHOW GAME OVER 
+	LOG("LOSE :(");
+
+	// PRESS SOMETHING TO RESTART ---> lives = 3;
+	if (App->input->GetKey(SDL_SCANCODE_SPACE) == KEY_DOWN)
+	{
+		lives = 3;
+	}
+
+	lost = false;
+}
+
+
+void ModuleBall::CapBallVel()
+{
+	if (ball != NULL && App->scene_pinball->exitKickerRect->body->IsActive()==true)
+	{
+		b2Vec2 currentVel = ball->body->GetLinearVelocity();
+		if (currentVel.y > MAXBALLVEL)
+		{
+			b2Vec2 newVel = { currentVel.x,MAXBALLVEL };
+			ball->body->SetLinearVelocity(newVel);
+		}
+		/*else if (currentVel.y < -MAXBALLVEL)
+		{
+			b2Vec2 newVel = { currentVel.x,-MAXBALLVEL };
+			ball->body->SetLinearVelocity(newVel);
+		}*/
+	}
 }
 
 void ModuleBall::DebugCreate()
@@ -78,8 +138,18 @@ void ModuleBall::DebugCreate()
 
 	if (App->input->GetKey(SDL_SCANCODE_1) == KEY_DOWN)
 	{
-		circles.add(App->physics->CreateCircle(App->input->GetMouseX(), App->input->GetMouseY(), 8));
-		circles.getLast()->data->listener = (Module*)this;
+		if (ball == NULL)
+		{
+			ball = App->physics->CreateCircle(App->input->GetMouseX(), App->input->GetMouseY(), 8);
+			ball->listener = (Module*)this;
+		}
+		else
+		{
+			b2Vec2 mousePos = { PIXEL_TO_METERS(App->input->GetMouseX()),  PIXEL_TO_METERS(App->input->GetMouseY()) };
+			b2Vec2 newVel = { 0.0f,2.0f };
+			ball->body->SetTransform(mousePos, ball->GetRotation());
+			ball->body->SetLinearVelocity(newVel);
+		}
 	}
 
 	if (App->input->GetKey(SDL_SCANCODE_F1) == KEY_DOWN)
@@ -87,23 +157,26 @@ void ModuleBall::DebugCreate()
 		debug = !debug;
 	}
 
+	if (App->input->GetKey(SDL_SCANCODE_F2) == KEY_DOWN)
+	{
+		dead = true;
+	}
+
 	if (App->input->GetKey(SDL_SCANCODE_DOWN) == KEY_DOWN) // Provisional kicker
 	{
-		p2List_item<PhysBody*>* list;
-		list = circles.getFirst();
-		for (int i = 0; i < circles.count(); ++i)
+		b2Vec2 startPos = { 300.0f,580.0f };
+
+		int x = 0, y = 0;
+		ball->GetPosition(x, y);
+		if (x >= startPos.x && y >= startPos.y)
 		{
-			if (list != NULL)
+			if (ball != NULL)
 			{
 				b2Vec2 force = { 0.0f,-75.0f };
-				list->data->body->ApplyForceToCenter(force, true);
+				ball->body->ApplyForceToCenter(force, true);
 			}
-
-			if (i == circles.count() - 1)
-				break;
-
-			list = list->next;
 		}
+		
 	}
 }
 
@@ -166,23 +239,71 @@ void ModuleBall::PostRayCast()
 
 void ModuleBall::ResetBallState()
 {
-	p2List_item<PhysBody*>* list;
-	list = circles.getLast();
-	int x = 0, y = 0;
-	LOG("There are %d balls!!!", circles.count());
 	if (dead)
 	{
+		lives = lives - 1;
 		dead = false;
-		App->scene_pinball->mapSensors.getFirst()->data->chainBody->body->SetActive(false);
+		b2Vec2 outSide = { 50.0f, 50.0f };
+		p2List_item<Sensors*>* t;
+		t = App->scene_pinball->mapSensors.getFirst();
 
+		// If dead, set sensor false, and exit chain in a outside screen position
+		t->data->chainBody->body->SetActive(false); 
+		t->data->isActive = false;
+		t->data->chainBody->body->SetTransform(outSide, App->scene_pinball->mapSensors.getFirst()->data->chainBody->GetRotation());
+
+		// Reset the ball to the kicker 
 		b2Vec2 startPos = { PIXEL_TO_METERS(319.0f),PIXEL_TO_METERS(585.0f) };
-		if (list != NULL)
-			list->data->body->SetTransform(startPos, list->data->GetRotation());
-
+		if (ball != NULL)
+			ball->body->SetTransform(startPos, ball->GetRotation());
 	}
-	if (list != NULL)
-		list->data->GetPosition(x, y);
-	LOG("Ball pos is %d %d", x, y);
+
+}
+
+void ModuleBall::LogBall()
+{
+	if (debug && ball != NULL)
+	{
+		int x = 0, y = 0;
+		b2Vec2 vel = ball->body->GetLinearVelocity();
+		ball->GetPosition(x, y);
+		
+		LOG("Ball pos is %d %d", x, y);
+		LOG("Ball vel is %f %f", vel.x, vel.y);
+	}
+}
+
+void ModuleBall::BounceLogic()
+{
+	LOG("BOING!!!!");
+	if (isBounce)
+	{
+		if (bounceTimer == 1)
+		{
+			//// Not doing what i Intend :(
+			//b2Vec2 vel = ball->body->GetLinearVelocity();
+			//vel.Normalize();
+			//vel = { -vel.x,-vel.y/2 };
+			//b2Vec2 newImpulse = vel;
+			////ball->body->SetLinearVelocity(newImpulse);
+			//ball->body->ApplyLinearImpulse(newImpulse, ball->body->GetLocalCenter(), true);
+			////ball->body->ApplyForce(newImpulse, ball->body->GetLocalCenter(), true);
+			//CapBallVel();
+
+			// Sum points
+			App->hud->score += 300;
+			isBounce = false;
+			LogBall();
+		}
+
+		if (bounceTimer >= 60) // Cooldown of the bonus sensors
+		{
+			bounceTimer = 0;
+			isBounce = false;
+		}
+
+		bounceTimer++;
+	}
 }
 
 void ModuleBall::OnCollision(PhysBody* bodyA, PhysBody* bodyB)
@@ -192,6 +313,34 @@ void ModuleBall::OnCollision(PhysBody* bodyA, PhysBody* bodyB)
 	{
 		LOG("DEAD!!!!!!!!!");
 		dead = true;
+	}
+
+	if (bodyA == ball)
+	{
+		p2List_item<PhysBody*>* boingList;
+		boingList = App->scene_pinball->reboundableBody.getFirst();
+
+		for (int i = 0; i < App->scene_pinball->reboundableBody.count(); ++i)
+		{
+			if (bodyB == boingList->data)
+			{
+				//LOG("BOING!!!!");
+				//// Not doing what i Intend :(
+				//b2Vec2 vel = ball->body->GetLinearVelocity();
+				//vel.Normalize();
+				//vel = { -vel.x,-vel.y/2 };
+				//b2Vec2 newImpulse = vel;
+				////ball->body->SetLinearVelocity(newImpulse);
+				//ball->body->ApplyLinearImpulse(newImpulse, ball->body->GetLocalCenter(), true);
+				////ball->body->ApplyForce(newImpulse, ball->body->GetLocalCenter(), true);
+				//CapBallVel();
+				isBounce = true;
+				LogBall();
+			}
+
+			boingList = boingList->next;
+		}
+
 	}
 }
 // TODO 8: Now just define collision callback for the circle and play bonus_fx audio

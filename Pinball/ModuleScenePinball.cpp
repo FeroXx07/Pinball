@@ -6,6 +6,7 @@
 #include "ModuleTextures.h"
 #include "Audio.h"
 #include "ModulePhysics.h"
+#include "ModuleHud.h"
 
 #define COUNTDOWNBONUS 300
 
@@ -45,25 +46,35 @@ void ModuleScenePinball::LoadMap()
 {
 	// Create the three boing balls
 	bounces.add(App->physics->CreateCircle(182, 140, 23, b2BodyType::b2_staticBody));
-	bounces.getLast()->data->listener = (Module*)this;
+	bounces.getLast()->data->listener = (Module*)App->ball;
+	reboundableBody.add(bounces.getLast()->data); // Add this PhysBody to a special list in order to do rebound when collision
 
 	bounces.add(App->physics->CreateCircle(254, 144, 23, b2BodyType::b2_staticBody));
-	bounces.getLast()->data->listener = (Module*)this;
+	bounces.getLast()->data->listener = (Module*)App->ball;
+	reboundableBody.add(bounces.getLast()->data);// Add this PhysBody to a special list in order to do rebound when collision
 
 	// Upper small rects
-	App->physics->CreateRectangle(187, 94, 3, 18);
-	App->physics->CreateRectangle(209, 94, 3, 18);
-	App->physics->CreateRectangle(233, 94, 3, 18);
-	App->physics->CreateRectangle(255, 94, 3, 18);
+	redRects.add(App->physics->CreateRectangle(187, 94, 3, 18));
+	redRects.getLast()->data->listener = (Module*)this;
+	redRects.add(App->physics->CreateRectangle(209, 94, 3, 18));
+	redRects.getLast()->data->listener = (Module*)this;
+	redRects.add(App->physics->CreateRectangle(233, 94, 3, 18));
+	redRects.getLast()->data->listener = (Module*)this;
+	redRects.add(App->physics->CreateRectangle(255, 94, 3, 18));
+	redRects.getLast()->data->listener = (Module*)this;
 
 	// The base walls, and side Plates
 	App->physics->CreateChain(0, 0, wallsPoints, 160, b2BodyType::b2_staticBody);
-	App->physics->CreateChain(0, 0, rightPlate, 30, b2BodyType::b2_staticBody);
-	App->physics->CreateChain(0, 0, leftPlate, 36, b2BodyType::b2_staticBody);
+
+	reboundableBody.add(App->physics->CreateChain(0, 0, rightPlate, 30, b2BodyType::b2_staticBody));	 // Add this PhysBody to a special list in order to do rebound when collision
+	reboundableBody.getLast()->data->listener= (Module*)App->ball;
+	reboundableBody.add(App->physics->CreateChain(0, 0, leftPlate, 36, b2BodyType::b2_staticBody));		 // Add this PhysBody to a special list in order to do rebound when collision
+	reboundableBody.getLast()->data->listener = (Module*)App->ball;
+
 	App->physics->CreateChain(0, 0, rightRamp, 12, b2BodyType::b2_staticBody);
 	App->physics->CreateChain(0, 0, leftRamp, 12, b2BodyType::b2_staticBody);
 
-	exitKickerRect = App->physics->CreateChain(0, 0, exitRect, 10, b2BodyType::b2_staticBody);
+	exitKickerRect = App->physics->CreateChain(0+50, 0+50, exitRect, 10, b2BodyType::b2_staticBody);
 	exitKickerRect->body->SetActive(false);
 
 }
@@ -145,6 +156,7 @@ void ModuleScenePinball::LoadLeftPaddle(int x, int y)
 	// -------------- Left Paddle Creation --------------------------------
 	PhysBody* pBoxLeft = App->physics->CreateRectangle(x, y, 56, 10, b2BodyType::b2_dynamicBody);
 	PhysBody* pCircleLeft = App->physics->CreateCircle(x, y, 10, b2BodyType::b2_staticBody);
+	pCircleLeft->body->GetFixtureList()->SetSensor(true);
 
 	b2RevoluteJointDef revDefLeft;
 	//pBox->body->SetGravityScale(0.0f);
@@ -174,6 +186,7 @@ void ModuleScenePinball::LoadRightPaddle(int x, int y)
 	// -------------- Right Paddle Creation --------------------------------
 	PhysBody* pBoxRight = App->physics->CreateRectangle(x, y, 56, 10, b2BodyType::b2_dynamicBody);
 	PhysBody* pCircleRight = App->physics->CreateCircle(x, y, 10, b2BodyType::b2_staticBody);
+	pCircleRight->body->GetFixtureList()->SetSensor(true);
 
 	b2RevoluteJointDef revDefRight;
 	//pBoxRight->body->SetGravityScale(0.0f);
@@ -203,14 +216,6 @@ bool ModuleScenePinball::Start()
 	bool ret = true;
 
 	LoadAssets();
-
-	principalMap = true;
-	specialLeftNet = false;
-	specialRightKicker = false;  // True at start
-	specialRightZigZag = false;
-	specialCenterTwirl = false;
-	specialLeftToRight = false;
-
 	LoadMap();
 	LoadSensors();
 
@@ -282,11 +287,12 @@ void ModuleScenePinball::SensorLogic()
 
 	// Exit kicker Sensor check
 	sensorsList = mapSensors.getFirst();
-	mapSensors.at(0, sensorsList->data);
 	if (sensorsList->data->isActive == true)
 	{
-		if (sensorsList->data->chainBody->body->IsActive() == false)
+		if (sensorsList->data->chainBody->body->IsActive() == false) // If sensor true and exit false, then put exit chain into correct pos (0,0)
 		{
+			b2Vec2 newPos = {0.0f,0.0f };
+			sensorsList->data->chainBody->body->SetTransform(newPos, sensorsList->data->chainBody->GetRotation());
 			sensorsList->data->chainBody->body->SetActive(true);
 		}
 	}
@@ -299,11 +305,27 @@ void ModuleScenePinball::PaddleInput()
 	{
 		rightPaddle->GetBodyA()->ApplyTorque(paddleSpeed * 30, true);
 	}
+	/*if (App->input->GetKey(SDL_SCANCODE_RIGHT) == KEY_REPEAT)
+	{
+		rightPaddle->GetBodyA()->SetGravityScale(0.0f);
+	}
+	else if (App->input->GetKey(SDL_SCANCODE_RIGHT) == KEY_UP)
+	{
+		rightPaddle->GetBodyA()->SetGravityScale(1.0f);
+	}*/
 
 	if (App->input->GetKey(SDL_SCANCODE_LEFT) == KEY_DOWN)
 	{
 		leftPaddle->GetBodyA()->ApplyTorque(-paddleSpeed * 30, true);
 	}
+	/*if (App->input->GetKey(SDL_SCANCODE_LEFT) == KEY_REPEAT)
+	{
+		leftPaddle->GetBodyA()->SetGravityScale(0.0f);
+	}
+	else if (App->input->GetKey(SDL_SCANCODE_LEFT) == KEY_UP)
+	{
+		leftPaddle->GetBodyA()->SetGravityScale(1.0f);
+	}*/
 }
 
 
@@ -451,7 +473,7 @@ void ModuleScenePinball::BonusLettersLogic()
 
 		if (bonusLetterTimer[i] == 1) // Sum bonus score
 		{
-
+			App->hud->score += 400;
 		}
 	}
 }
@@ -496,5 +518,9 @@ void ModuleScenePinball::OnCollision(PhysBody* bodyA, PhysBody* bodyB)
 			sensorsList = sensorsList->next;
 		}
 		
+	}
+	else
+	{
+		App->hud->score += 200;
 	}
 }

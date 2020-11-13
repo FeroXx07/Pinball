@@ -47,12 +47,7 @@ public:
 
 	uint bonus_fx;
 private:
-	bool principalMap = false;
-	bool specialLeftNet = false;
-	bool specialRightKicker = true;  // True at start
-	bool specialRightZigZag = false;
-	bool specialCenterTwirl = false;
-	bool specialLeftToRight = false;
+
 
 private:
 	// Start field
@@ -407,5 +402,10 @@ public: // Map sensors field
 	PhysBody* exitKickerRect;
 	Sensors* CreateSensor(PhysBody* b, PhysBody* c, iPoint p, Module* l);
 
+public: // Rebound (rebote) field
+	p2List< PhysBody*>reboundableBody;
+
+public: // RedRects 
+	p2List< PhysBody*>redRects;
 
 };
