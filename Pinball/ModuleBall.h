@@ -25,7 +25,7 @@ public:
 	bool sensed;
 	SDL_Texture* ballTexture;
 	SDL_Texture* supraTex;
-	uint bonusFx;
+	uint collisionFx;
 
 private:
 	// Start functions

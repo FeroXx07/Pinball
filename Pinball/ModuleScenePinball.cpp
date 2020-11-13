@@ -92,7 +92,6 @@ bool ModuleScenePinball::LoadAssets()
 	rightPaddleTex = App->textures->Load("pinball/sprites/RightStick.png");
 	chain = App->textures->Load("pinball/sprites/rick_head.png");
 	infraTex = App->textures->Load("pinball/sprites/InfraPinball.png");
-	bonus_fx = App->audio->LoadFx("pinball/bonus.wav");
 
 	//PhysBody* pBox2 = App->physics->CreateRectangle(200, 350, 20, 10, b2BodyType::b2_staticBody);
 
@@ -106,6 +105,7 @@ bool ModuleScenePinball::LoadAssets()
 	bonusLettersTex.add(App->textures->Load("pinball/sprites/N.png"));
 	bonusLettersTex.add(App->textures->Load("pinball/sprites/K.png"));
 
+	App->audio->PlayMusic("pinball/audio/bgMusic.ogg");
 	return ret;
 }
 
@@ -478,7 +478,7 @@ void ModuleScenePinball::BonusLettersLogic()
 
 		if (bonusLetterTimer[i] == 1) // Sum bonus score
 		{
-			App->hud->score += 400;
+			App->hud->score += 40;
 		}
 	}
 }
@@ -526,6 +526,6 @@ void ModuleScenePinball::OnCollision(PhysBody* bodyA, PhysBody* bodyB)
 	}
 	else
 	{
-		App->hud->score += 200;
+		App->hud->score += 20;
 	}
 }

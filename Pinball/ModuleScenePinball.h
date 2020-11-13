@@ -45,7 +45,7 @@ public:
 	SDL_Texture* chain;
 	SDL_Texture* infraTex;
 
-	uint bonus_fx;
+	uint collisionFx;
 private:
 
 

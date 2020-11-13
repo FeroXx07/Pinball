@@ -46,7 +46,7 @@ bool ModuleBall::LoadAssets()
 	bool ret = true;
 	ballTexture = App->textures->Load("pinball/sprites/ball.png");
 	supraTex = App->textures->Load("pinball/sprites/SupraPinball.png");
-	bonusFx = App->audio->LoadFx("pinball/bonus.wav");
+	collisionFx = App->audio->LoadFx("pinball/audio/collideFx.wav");
 	return ret;
 }
 
@@ -56,7 +56,7 @@ bool ModuleBall::CleanUp()
 	LOG("Unloading Intro scene");
 	App->textures->Unload(ballTexture);
 	App->textures->Unload(supraTex);
-	App->audio->UnloadFx(bonusFx);
+	App->audio->UnloadFx(collisionFx);
 
 	return true;
 }
@@ -322,6 +322,8 @@ void ModuleBall::BounceLogic()
 
 void ModuleBall::OnCollision(PhysBody* bodyA, PhysBody* bodyB)
 {
+	App->audio->PlayFx(collisionFx);
+
 	//App->audio->PlayFx(bonusFx);
 	if (bodyA->body->GetFixtureList()->IsSensor())
 	{
