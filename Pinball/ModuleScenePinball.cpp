@@ -74,6 +74,8 @@ void ModuleScenePinball::LoadMap()
 	App->physics->CreateChain(0, 0, rightRamp, 12, b2BodyType::b2_staticBody);
 	App->physics->CreateChain(0, 0, leftRamp, 12, b2BodyType::b2_staticBody);
 
+	App->physics->CreateChain(0, 0, blackRamp, 54, b2BodyType::b2_staticBody);
+
 	exitKickerRect = App->physics->CreateChain(0+50, 0+50, exitRect, 10, b2BodyType::b2_staticBody);
 	exitKickerRect->body->SetActive(false);
 
@@ -83,23 +85,23 @@ bool ModuleScenePinball::LoadAssets()
 {
 	bool ret = true;
 
-	leftPaddleTex = App->textures->Load("pinball/LeftStick.png");
-	rightPaddleTex = App->textures->Load("pinball/RightStick.png");
-	chain = App->textures->Load("pinball/rick_head.png");
-	infraTex = App->textures->Load("pinball/InfraPinball.png");
+	leftPaddleTex = App->textures->Load("pinball/sprites/LeftStick.png");
+	rightPaddleTex = App->textures->Load("pinball/sprites/RightStick.png");
+	chain = App->textures->Load("pinball/sprites/rick_head.png");
+	infraTex = App->textures->Load("pinball/sprites/InfraPinball.png");
 	bonus_fx = App->audio->LoadFx("pinball/bonus.wav");
 
 	//PhysBody* pBox2 = App->physics->CreateRectangle(200, 350, 20, 10, b2BodyType::b2_staticBody);
 
-	bonusLettersTex.add(App->textures->Load("pinball/P.png"));
-	bonusLettersTex.add(App->textures->Load("pinball/O.png"));
-	bonusLettersTex.add(App->textures->Load("pinball/W.png"));
-	bonusLettersTex.add(App->textures->Load("pinball/E.png"));
-	bonusLettersTex.add(App->textures->Load("pinball/R.png"));
-	bonusLettersTex.add(App->textures->Load("pinball/D.png"));
-	bonusLettersTex.add(App->textures->Load("pinball/U.png"));
-	bonusLettersTex.add(App->textures->Load("pinball/N.png"));
-	bonusLettersTex.add(App->textures->Load("pinball/K.png"));
+	bonusLettersTex.add(App->textures->Load("pinball/sprites/P.png"));
+	bonusLettersTex.add(App->textures->Load("pinball/sprites/O.png"));
+	bonusLettersTex.add(App->textures->Load("pinball/sprites/W.png"));
+	bonusLettersTex.add(App->textures->Load("pinball/sprites/E.png"));
+	bonusLettersTex.add(App->textures->Load("pinball/sprites/R.png"));
+	bonusLettersTex.add(App->textures->Load("pinball/sprites/D.png"));
+	bonusLettersTex.add(App->textures->Load("pinball/sprites/U.png"));
+	bonusLettersTex.add(App->textures->Load("pinball/sprites/N.png"));
+	bonusLettersTex.add(App->textures->Load("pinball/sprites/K.png"));
 
 	return ret;
 }

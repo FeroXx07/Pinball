@@ -29,6 +29,7 @@ public:
 
 	int whiteFont = -1;
 	int redFont = -1;
+	int greenFont = -1;
 
 	char scoreText[10] = { "\0" };
 	char highScoreText[10] = { "\0" };
