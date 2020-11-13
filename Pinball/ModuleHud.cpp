@@ -30,8 +30,9 @@ bool ModuleHud::Start()
 
 	char lookupTableNumbers[] = { "0123456789" };
 	//char lookupTableTextAndLives[] = { "ABCDEFGHIJKLMNOPQRSTUVWXYZ.-," }; // "," is LIVES SPRITE!!!!!!!!!
-	whiteFont = App->fonts->Load("pinball/Fonts.png", lookupTableNumbers, 1);
-	redFont = App->fonts->Load("pinball/Lives_Font.png", lookupTableNumbers, 1);
+	whiteFont = App->fonts->Load("pinball/fonts/score.png", lookupTableNumbers, 1);
+	redFont = App->fonts->Load("pinball/fonts/Lives_Font.png", lookupTableNumbers, 1);
+	greenFont = App->fonts->Load("pinball/fonts/previousScore.png", lookupTableNumbers, 1);
 	//lightBlueFont = App->fonts->Load("Assets/Fonts/Fonts_LIGHTBLUE.png", lookupTableTextAndLives, 1);
 	//darkBlueFont = App->fonts->Load("Assets/Fonts/Fonts_DARKBLUE.png", lookupTableNumbers, 1);
 	score = 0;
@@ -43,9 +44,9 @@ bool ModuleHud::Start()
 update_status ModuleHud::Update()
 {
 	// Draw UI (score) --------------------------------------
-	sprintf_s(scoreText, 10, "%8d", score);
-	sprintf_s(highScoreText, 10, "%6d", highScore);
-	sprintf_s(previousScoreText, 10, "%6d", previousScore);
+	sprintf_s(scoreText, 10, "%4d", score);
+	sprintf_s(highScoreText, 10, "%4d", highScore);
+	sprintf_s(previousScoreText, 10, "%4d", previousScore);
 
 	sprintf_s(livesText, 10, "%1d", App->ball->lives);	
 
@@ -58,10 +59,10 @@ update_status ModuleHud::PostUpdate()
 	if (drawScore)
 	{
 
-		App->fonts->BlitText(80, 5, whiteFont, scoreText);
+		App->fonts->BlitText(6, 5, whiteFont, scoreText);
 		App->fonts->BlitText(305, 5, redFont, livesText);
-		App->fonts->BlitText(80, 30, whiteFont, previousScoreText);
-		App->fonts->BlitText(80, 70, redFont, highScoreText);
+		App->fonts->BlitText(106, 5, greenFont, previousScoreText);
+		App->fonts->BlitText(206, 5, redFont, highScoreText);
 
 
 		/*if (App->player->destroyed && App->hud->lives == 0 && App->intro->IsEnabled() == false)

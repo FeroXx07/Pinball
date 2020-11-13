@@ -44,7 +44,7 @@ bool ModuleBall::LoadAssets()
 {
 	bool ret = true;
 	ballTexture = App->textures->Load("pinball/wheel1.png");
-	supraTex = App->textures->Load("pinball/SupraPinball.png");
+	supraTex = App->textures->Load("pinball/sprites/SupraPinball.png");
 	bonusFx = App->audio->LoadFx("pinball/bonus.wav");
 	return ret;
 }
@@ -93,19 +93,33 @@ update_status ModuleBall::Update()
 }
 void ModuleBall::RestartGame()
 {
-	// CHANGE SCORE,PREVIOUS SCORE, HIGHSCORE
-
-
-	// SHOW GAME OVER 
-	LOG("LOSE :(");
-
-	// PRESS SOMETHING TO RESTART ---> lives = 3;
-	if (App->input->GetKey(SDL_SCANCODE_SPACE) == KEY_DOWN)
+	if (lost)
 	{
-		lives = 3;
-	}
+		// CHANGE SCORE,PREVIOUS SCORE, HIGHSCORE
+		if (App->hud->score != 0)
+		{
+			App->hud->previousScore = App->hud->score;
+		}
+		App->hud->score = 0;
+		if (App->hud->highScore == 0)
+		{
+			App->hud->highScore = App->hud->previousScore;
+		}
+		if (App->hud->previousScore > App->hud->highScore)
+		{
+			App->hud->highScore = App->hud->previousScore;
+		}
+		// SHOW GAME OVER 
+		LOG("LOSE :(");
 
-	lost = false;
+		// PRESS SOMETHING TO RESTART ---> lives = 3;
+		if (App->input->GetKey(SDL_SCANCODE_SPACE) == KEY_DOWN)
+		{
+			lives = 3;
+		}
+
+		lost = false;
+	}
 }
 
 
