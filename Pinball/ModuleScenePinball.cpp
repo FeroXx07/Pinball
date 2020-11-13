@@ -66,15 +66,18 @@ void ModuleScenePinball::LoadMap()
 	// The base walls, and side Plates
 	App->physics->CreateChain(0, 0, wallsPoints, 160, b2BodyType::b2_staticBody);
 
-	reboundableBody.add(App->physics->CreateChain(0, 0, rightPlate, 30, b2BodyType::b2_staticBody));	 // Add this PhysBody to a special list in order to do rebound when collision
-	reboundableBody.getLast()->data->listener= (Module*)App->ball;
 	reboundableBody.add(App->physics->CreateChain(0, 0, leftPlate, 36, b2BodyType::b2_staticBody));		 // Add this PhysBody to a special list in order to do rebound when collision
 	reboundableBody.getLast()->data->listener = (Module*)App->ball;
+	reboundableBody.add(App->physics->CreateChain(0, 0, rightPlate, 30, b2BodyType::b2_staticBody));	 // Add this PhysBody to a special list in order to do rebound when collision
+	reboundableBody.getLast()->data->listener= (Module*)App->ball;
+	
 
 	App->physics->CreateChain(0, 0, rightRamp, 12, b2BodyType::b2_staticBody);
 	App->physics->CreateChain(0, 0, leftRamp, 12, b2BodyType::b2_staticBody);
 
 	App->physics->CreateChain(0, 0, blackRamp, 54, b2BodyType::b2_staticBody);
+	App->physics->CreateChain(0, 0, leftBigPlate, 92, b2BodyType::b2_staticBody);
+	App->physics->CreateChain(0, 0, rightBigPlate, 56, b2BodyType::b2_staticBody);
 
 	exitKickerRect = App->physics->CreateChain(0+50, 0+50, exitRect, 10, b2BodyType::b2_staticBody);
 	exitKickerRect->body->SetActive(false);

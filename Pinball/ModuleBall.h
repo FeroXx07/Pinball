@@ -5,7 +5,7 @@
 #include "Globals.h"
 
 class PhysBody;
-
+struct b2Vec2;
 class ModuleBall : public Module
 {
 public:
@@ -63,4 +63,5 @@ public:
 	int bounceTimer = 0;
 	void BounceLogic();
 	void ResetBallState();
+
 };

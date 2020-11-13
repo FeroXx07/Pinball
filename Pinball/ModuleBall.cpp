@@ -34,6 +34,7 @@ bool ModuleBall::Start()
 	if (ball == NULL)
 	{
 		ball = App->physics->CreateCircle(startPos.x, startPos.y, 8);
+		ball->body->SetBullet(true);
 		ball->listener = (Module*)this;
 	}
 	lost = false;
@@ -43,7 +44,7 @@ bool ModuleBall::Start()
 bool ModuleBall::LoadAssets()
 {
 	bool ret = true;
-	ballTexture = App->textures->Load("pinball/wheel1.png");
+	ballTexture = App->textures->Load("pinball/sprites/ball.png");
 	supraTex = App->textures->Load("pinball/sprites/SupraPinball.png");
 	bonusFx = App->audio->LoadFx("pinball/bonus.wav");
 	return ret;
@@ -83,12 +84,12 @@ update_status ModuleBall::Update()
 	RestartGame();
 
 	// <<<< DRAW >>>>
-	PreRayCast();
+	//PreRayCast();
 
 	DrawBalls();
 	DrawSupra();
 
-	PostRayCast();
+	//PostRayCast();
 	return UPDATE_CONTINUE;
 }
 void ModuleBall::RestartGame()
@@ -196,28 +197,27 @@ void ModuleBall::DebugCreate()
 
 void ModuleBall::DrawBalls()
 {
-	p2List_item<PhysBody*>* c = circles.getFirst();
 
-	while (c != NULL)
+	if (ball != NULL)
 	{
 		int x, y;
-		c->data->GetPosition(x, y);
+		ball->GetPosition(x, y);
 		/*if(c->data->Contains(App->input->GetMouseX(), App->input->GetMouseY()))*/
-		if (ballTexture !=NULL)App->renderer->Blit(ballTexture, x, y, NULL, 1.0f, c->data->GetRotation());
+		if (ballTexture !=NULL)App->renderer->Blit(ballTexture, x, y, NULL, 1.0f, ball->GetRotation());
 		if (ray_on)
 		{
-			int hit = c->data->RayCast(ray.x, ray.y, mouse.x, mouse.y, normal.x, normal.y);
+			int hit = ball->RayCast(ray.x, ray.y, mouse.x, mouse.y, normal.x, normal.y);
 			if (hit >= 0)
 				ray_hit = hit;
 		}
 		if (debug)
 		{
-			b2Vec2 vel = c->data->body->GetLinearVelocity();
+			b2Vec2 vel = ball->body->GetLinearVelocity();
 			vel.Normalize();
 			iPoint pos = { x,y };
 			App->renderer->DrawLine(pos.x + 8, pos.y + 8, pos.x + vel.x * 25, pos.y + vel.y * 25, 250, 0, 0);
 		}
-		c = c->next;
+		
 	}
 }
 
@@ -305,7 +305,7 @@ void ModuleBall::BounceLogic()
 			//CapBallVel();
 
 			// Sum points
-			App->hud->score += 300;
+			App->hud->score += 30;
 			isBounce = false;
 			LogBall();
 		}
@@ -334,27 +334,29 @@ void ModuleBall::OnCollision(PhysBody* bodyA, PhysBody* bodyB)
 		p2List_item<PhysBody*>* boingList;
 		boingList = App->scene_pinball->reboundableBody.getFirst();
 
-		for (int i = 0; i < App->scene_pinball->reboundableBody.count(); ++i)
+		PhysBody* temp = boingList->data;
+		// Right bounce
+		App->scene_pinball->reboundableBody.at(2, boingList->data);
+		if (bodyB == boingList->data)
 		{
-			if (bodyB == boingList->data)
-			{
-				//LOG("BOING!!!!");
-				//// Not doing what i Intend :(
-				//b2Vec2 vel = ball->body->GetLinearVelocity();
-				//vel.Normalize();
-				//vel = { -vel.x,-vel.y/2 };
-				//b2Vec2 newImpulse = vel;
-				////ball->body->SetLinearVelocity(newImpulse);
-				//ball->body->ApplyLinearImpulse(newImpulse, ball->body->GetLocalCenter(), true);
-				////ball->body->ApplyForce(newImpulse, ball->body->GetLocalCenter(), true);
-				//CapBallVel();
-				isBounce = true;
-				LogBall();
-			}
-
-			boingList = boingList->next;
+			b2Vec2 force = { 35.0f,-25.0f };
+			ball->body->ApplyForceToCenter(force, true);
+		}
+		App->scene_pinball->reboundableBody.at(3, boingList->data);
+		if (bodyB == boingList->data)
+		{
+			b2Vec2 force = { -25.0f,-25.0f };
+			ball->body->ApplyForceToCenter(force, true);
 		}
 
+		//CapBallVel();
+
+		isBounce = true;
+		LogBall();
+	
+		
 	}
 }
-// TODO 8: Now just define collision callback for the circle and play bonus_fx audio
+
+
+
