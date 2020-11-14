@@ -26,6 +26,7 @@ public:
 	SDL_Texture* ballTexture;
 	SDL_Texture* supraTex;
 	uint collisionFx;
+	uint bounceFx;
 
 private:
 	// Start functions

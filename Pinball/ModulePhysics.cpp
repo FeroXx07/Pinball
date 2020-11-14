@@ -68,7 +68,6 @@ PhysBody* ModulePhysics::CreateCircle(int x, int y, int radius, b2BodyType type)
 	b2FixtureDef fixture;
 	fixture.shape = &shape;
 	fixture.density = 1.0f;
-
 	b->CreateFixture(&fixture);
 
 	// TODO 4: add a pointer to PhysBody as UserData to the body

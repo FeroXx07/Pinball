@@ -14,7 +14,7 @@ b2BodyType;
 
 ModuleScenePinball::ModuleScenePinball(Application* app, bool start_enabled) : Module(app, start_enabled)
 {
-	leftPaddleTex = chain = NULL;
+	leftPaddleTex = rightPaddleTex = NULL;
 	ray_on = false;
 	sensed = false;
 	//kickerJoint = NULL;
@@ -47,10 +47,12 @@ void ModuleScenePinball::LoadMap()
 	// Create the three boing balls
 	bounces.add(App->physics->CreateCircle(182, 140, 23, b2BodyType::b2_staticBody));
 	bounces.getLast()->data->listener = (Module*)App->ball;
+	bounces.getLast()->data->body->GetFixtureList()->SetRestitution(1.5f); // Chain Bounciness ++
 	reboundableBody.add(bounces.getLast()->data); // Add this PhysBody to a special list in order to do rebound when collision
 
 	bounces.add(App->physics->CreateCircle(254, 144, 23, b2BodyType::b2_staticBody));
 	bounces.getLast()->data->listener = (Module*)App->ball;
+	bounces.getLast()->data->body->GetFixtureList()->SetRestitution(1.5f); // Chain Bounciness ++
 	reboundableBody.add(bounces.getLast()->data);// Add this PhysBody to a special list in order to do rebound when collision
 
 	// Upper small rects
@@ -68,9 +70,12 @@ void ModuleScenePinball::LoadMap()
 
 	reboundableBody.add(App->physics->CreateChain(0, 0, leftPlate, 36, b2BodyType::b2_staticBody));		 // Add this PhysBody to a special list in order to do rebound when collision
 	reboundableBody.getLast()->data->listener = (Module*)App->ball;
+	//reboundableBody.getLast()->data->body->GetFixtureList()->SetRestitution(1.5f); // Chain Bounciness ++
+
 	reboundableBody.add(App->physics->CreateChain(0, 0, rightPlate, 30, b2BodyType::b2_staticBody));	 // Add this PhysBody to a special list in order to do rebound when collision
 	reboundableBody.getLast()->data->listener= (Module*)App->ball;
-	
+	//reboundableBody.getLast()->data->body->GetFixtureList()->SetRestitution(1.5f); // Chain Bounciness ++
+
 
 	App->physics->CreateChain(0, 0, rightRamp, 12, b2BodyType::b2_staticBody);
 	App->physics->CreateChain(0, 0, leftRamp, 12, b2BodyType::b2_staticBody);
@@ -90,10 +95,9 @@ bool ModuleScenePinball::LoadAssets()
 
 	leftPaddleTex = App->textures->Load("pinball/sprites/LeftStick.png");
 	rightPaddleTex = App->textures->Load("pinball/sprites/RightStick.png");
-	chain = App->textures->Load("pinball/sprites/rick_head.png");
 	infraTex = App->textures->Load("pinball/sprites/InfraPinball.png");
-
-	//PhysBody* pBox2 = App->physics->CreateRectangle(200, 350, 20, 10, b2BodyType::b2_staticBody);
+	bonusFx = App->audio->LoadFx("pinball/audio/bonusFx.wav");
+	paddleFx = App->audio->LoadFx("pinball/audio/paddleFx.wav");
 
 	bonusLettersTex.add(App->textures->Load("pinball/sprites/P.png"));
 	bonusLettersTex.add(App->textures->Load("pinball/sprites/O.png"));
@@ -240,6 +244,8 @@ bool ModuleScenePinball::CleanUp()
 	App->textures->Unload(infraTex);
 	App->textures->Unload(leftPaddleTex);
 	App->textures->Unload(rightPaddleTex);
+	App->audio->UnloadFx(bonusFx);
+	App->audio->UnloadFx(paddleFx);
 
 	p2List_item<SDL_Texture*>* texs;
 	texs = bonusLettersTex.getFirst();
@@ -309,6 +315,7 @@ void ModuleScenePinball::PaddleInput()
 	if (App->input->GetKey(SDL_SCANCODE_RIGHT) == KEY_DOWN)
 	{
 		rightPaddle->GetBodyA()->ApplyTorque(paddleSpeed * 30, true);
+		App->audio->PlayFx(paddleFx);
 	}
 	/*if (App->input->GetKey(SDL_SCANCODE_RIGHT) == KEY_REPEAT)
 	{
@@ -322,6 +329,7 @@ void ModuleScenePinball::PaddleInput()
 	if (App->input->GetKey(SDL_SCANCODE_LEFT) == KEY_DOWN)
 	{
 		leftPaddle->GetBodyA()->ApplyTorque(-paddleSpeed * 30, true);
+		App->audio->PlayFx(paddleFx);
 	}
 	/*if (App->input->GetKey(SDL_SCANCODE_LEFT) == KEY_REPEAT)
 	{
@@ -470,6 +478,7 @@ void ModuleScenePinball::BonusLettersLogic()
 
 			if (bonusLetterTimer[i] >= COUNTDOWNBONUS) // Cooldown of the bonus sensors
 			{
+				App->audio->PlayFx(bonusFx);
 				bonusLetterTimer[i] = 0;
 				bonusLetters[i] = false;
 			}
@@ -478,6 +487,7 @@ void ModuleScenePinball::BonusLettersLogic()
 
 		if (bonusLetterTimer[i] == 1) // Sum bonus score
 		{
+			App->audio->PlayFx(bonusFx);
 			App->hud->score += 40;
 		}
 	}

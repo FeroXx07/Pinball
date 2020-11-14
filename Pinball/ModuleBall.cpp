@@ -47,6 +47,7 @@ bool ModuleBall::LoadAssets()
 	ballTexture = App->textures->Load("pinball/sprites/ball.png");
 	supraTex = App->textures->Load("pinball/sprites/SupraPinball.png");
 	collisionFx = App->audio->LoadFx("pinball/audio/collideFx.wav");
+	bounceFx = App->audio->LoadFx("pinball/audio/bounceFx.wav");
 	return ret;
 }
 
@@ -57,6 +58,7 @@ bool ModuleBall::CleanUp()
 	App->textures->Unload(ballTexture);
 	App->textures->Unload(supraTex);
 	App->audio->UnloadFx(collisionFx);
+	App->audio->UnloadFx(bounceFx);
 
 	return true;
 }
@@ -294,16 +296,7 @@ void ModuleBall::BounceLogic()
 	{
 		if (bounceTimer == 1)
 		{
-			//// Not doing what i Intend :(
-			//b2Vec2 vel = ball->body->GetLinearVelocity();
-			//vel.Normalize();
-			//vel = { -vel.x,-vel.y/2 };
-			//b2Vec2 newImpulse = vel;
-			////ball->body->SetLinearVelocity(newImpulse);
-			//ball->body->ApplyLinearImpulse(newImpulse, ball->body->GetLocalCenter(), true);
-			////ball->body->ApplyForce(newImpulse, ball->body->GetLocalCenter(), true);
-			//CapBallVel();
-
+			
 			// Sum points
 			App->hud->score += 30;
 			isBounce = false;
@@ -349,6 +342,17 @@ void ModuleBall::OnCollision(PhysBody* bodyA, PhysBody* bodyB)
 		{
 			b2Vec2 force = { -25.0f,-25.0f };
 			ball->body->ApplyForceToCenter(force, true);
+		}
+	
+		p2List_item<PhysBody*>* allBounces;
+		allBounces = App->scene_pinball->reboundableBody.getFirst();
+		for (int i = 0; i < App->scene_pinball->reboundableBody.count(); ++i)
+		{
+			if (bodyB == allBounces->data)
+			{
+				App->audio->PlayFx(bounceFx);
+			}
+			allBounces = allBounces->next;
 		}
 
 		//CapBallVel();

@@ -57,15 +57,24 @@ bool ModuleAudio::CleanUp()
 	}
 
 	p2List_item<Mix_Chunk*>* item;
+	item = fx.getFirst();
+	for(int i=0; i<fx.count();++i)
+	{
+		if (item != NULL)
+			Mix_FreeChunk(item->data);
 
-	for(item = fx.getFirst(); item != NULL; item = item->next)
+		item = item->next;
+	}
+	/*for (item = fx.getFirst(); item != NULL; item = item->next)
 	{
 		Mix_FreeChunk(item->data);
-	}
+	}*/
 
 	fx.clear();
-	Mix_CloseAudio();
+	fx.~p2List();
+
 	Mix_Quit();
+	Mix_CloseAudio();
 	SDL_QuitSubSystem(SDL_INIT_AUDIO);
 	return true;
 }
