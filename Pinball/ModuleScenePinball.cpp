@@ -302,7 +302,7 @@ update_status ModuleScenePinball::Update()
 	{
 		// Draw Image
 		App->renderer->Blit(initialTex, 0, 0);
-		if (App->input->GetKey(SDL_SCANCODE_SPACE) == KEY_DOWN)
+		if (App->input->GetKey(SDL_SCANCODE_RETURN) == KEY_DOWN)
 		{
 			// If press start then startGame = false;
 			gameStart = false;
@@ -313,7 +313,7 @@ update_status ModuleScenePinball::Update()
 	{
 		// Draw Image
 		App->renderer->Blit(gameOverTex, 0, 0);
-		if (App->input->GetKey(SDL_SCANCODE_SPACE) == KEY_DOWN)
+		if (App->input->GetKey(SDL_SCANCODE_RETURN) == KEY_DOWN)
 		{
 			// If press start then startGame = false;
 			App->ball->lives = 3;
