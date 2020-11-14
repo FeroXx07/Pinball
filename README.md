@@ -21,7 +21,7 @@ https://github.com/FeroXx07/Pinball/tree/main/Pinball
 
  - Shahid, Ali Hassan - Programmer
  - López, Carles - Programmer
- - Buxeda, Martí - Programmer
+ - Buxeda, Martí - Programmer & Music Composer
 
 ## License
 
