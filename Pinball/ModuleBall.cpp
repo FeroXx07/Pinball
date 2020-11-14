@@ -16,7 +16,7 @@ ModuleBall::ModuleBall(Application* app, bool start_enabled) : Module(app, start
 	ballTexture = NULL;
 	ray_on = false;
 	sensed = false;
-	debug = true;
+	debug = false;
 	
 }
 
@@ -33,7 +33,7 @@ bool ModuleBall::Start()
 	b2Vec2 startPos = { 319.0f,585.0f };
 	if (ball == NULL)
 	{
-		ball = App->physics->CreateCircle(startPos.x, startPos.y, 8);
+		ball = App->physics->CreateCircle(startPos.x, startPos.y, 7);//8
 		ball->body->SetBullet(true);
 		ball->listener = (Module*)this;
 	}
@@ -67,34 +67,37 @@ update_status ModuleBall::Update()
 {
 	if (lives > 0)
 	{
-		// <<<< INPUT >>>>
-		DebugCreate();
+		if (App->scene_pinball->gameStart == false && App->scene_pinball->gameOver == false)
+		{
+			// <<<< INPUT >>>>
+			DebugAndInput();
 
-		// <<<< LOGIC? >>>>
-		ResetBallState();
-		CapBallVel();
-		BounceLogic();
-		LogBall();
+			// <<<< LOGIC? >>>>
+			ResetBallState();
+			CapBallVel();
+			BounceLogic();
+			LogBall();
 
-		
+			// <<<< DRAW >>>>
+			//PreRayCast();
+			DrawBalls();
+			DrawSupra();
+		}
+
+		//PostRayCast();
 	}
 	else
 	{
 		lost = true;
-		
+		App->scene_pinball->gameOver = true;
 	}
-	RestartGame();
 
-	// <<<< DRAW >>>>
-	//PreRayCast();
+	RestartGameScore();
 
-	DrawBalls();
-	DrawSupra();
-
-	//PostRayCast();
+	
 	return UPDATE_CONTINUE;
 }
-void ModuleBall::RestartGame()
+void ModuleBall::RestartGameScore()
 {
 	if (lost)
 	{
@@ -114,12 +117,6 @@ void ModuleBall::RestartGame()
 		}
 		// SHOW GAME OVER 
 		LOG("LOSE :(");
-
-		// PRESS SOMETHING TO RESTART ---> lives = 3;
-		if (App->input->GetKey(SDL_SCANCODE_SPACE) == KEY_DOWN)
-		{
-			lives = 3;
-		}
 
 		lost = false;
 	}
@@ -144,7 +141,7 @@ void ModuleBall::CapBallVel()
 	}
 }
 
-void ModuleBall::DebugCreate()
+void ModuleBall::DebugAndInput()
 {
 	if (App->input->GetKey(SDL_SCANCODE_SPACE) == KEY_DOWN)
 	{
@@ -296,11 +293,10 @@ void ModuleBall::BounceLogic()
 	{
 		if (bounceTimer == 1)
 		{
-			
 			// Sum points
 			App->hud->score += 30;
 			isBounce = false;
-			LogBall();
+			//LogBall();
 		}
 
 		if (bounceTimer >= 60) // Cooldown of the bonus sensors
@@ -331,13 +327,13 @@ void ModuleBall::OnCollision(PhysBody* bodyA, PhysBody* bodyB)
 
 		PhysBody* temp = boingList->data;
 		// Right bounce
-		App->scene_pinball->reboundableBody.at(2, boingList->data);
+		App->scene_pinball->reboundableBody.at(3, boingList->data);
 		if (bodyB == boingList->data)
 		{
 			b2Vec2 force = { 35.0f,-25.0f };
 			ball->body->ApplyForceToCenter(force, true);
 		}
-		App->scene_pinball->reboundableBody.at(3, boingList->data);
+		App->scene_pinball->reboundableBody.at(4, boingList->data);
 		if (bodyB == boingList->data)
 		{
 			b2Vec2 force = { -25.0f,-25.0f };

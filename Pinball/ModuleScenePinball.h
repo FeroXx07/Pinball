@@ -39,10 +39,15 @@ public:
 
 	PhysBody* sensor;
 	bool sensed;
+	bool debug;
+	bool gameStart;
+	bool gameOver;
 
 	SDL_Texture* leftPaddleTex;
 	SDL_Texture* rightPaddleTex;
 	SDL_Texture* infraTex;
+	SDL_Texture* initialTex;
+	SDL_Texture* gameOverTex;
 
 	uint bonusFx;
 	uint paddleFx;
@@ -64,7 +69,7 @@ private:
 	void DrawPaddlles();
 	void DrawBonusLetters();
 
-	void DebugCreate();
+	void Debug();
 
 private: // Raycast field
 	iPoint mouse;

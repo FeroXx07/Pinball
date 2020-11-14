@@ -7,6 +7,7 @@
 #include "Audio.h"
 #include "ModulePhysics.h"
 #include "ModuleHud.h"
+#include "ModuleBall.h"
 
 #define COUNTDOWNBONUS 300
 
@@ -17,8 +18,9 @@ ModuleScenePinball::ModuleScenePinball(Application* app, bool start_enabled) : M
 	leftPaddleTex = rightPaddleTex = NULL;
 	ray_on = false;
 	sensed = false;
-	//kickerJoint = NULL;
-	
+	debug = false;
+	gameStart = true;
+	gameOver = false;
 }
 
 ModuleScenePinball::~ModuleScenePinball()
@@ -47,13 +49,18 @@ void ModuleScenePinball::LoadMap()
 	// Create the three boing balls
 	bounces.add(App->physics->CreateCircle(182, 140, 23, b2BodyType::b2_staticBody));
 	bounces.getLast()->data->listener = (Module*)App->ball;
-	bounces.getLast()->data->body->GetFixtureList()->SetRestitution(1.5f); // Chain Bounciness ++
+	bounces.getLast()->data->body->GetFixtureList()->SetRestitution(0.25f); // Chain Bounciness ++
 	reboundableBody.add(bounces.getLast()->data); // Add this PhysBody to a special list in order to do rebound when collision
 
 	bounces.add(App->physics->CreateCircle(254, 144, 23, b2BodyType::b2_staticBody));
 	bounces.getLast()->data->listener = (Module*)App->ball;
-	bounces.getLast()->data->body->GetFixtureList()->SetRestitution(1.5f); // Chain Bounciness ++
+	bounces.getLast()->data->body->GetFixtureList()->SetRestitution(0.25f); // Chain Bounciness ++
 	reboundableBody.add(bounces.getLast()->data);// Add this PhysBody to a special list in order to do rebound when collision
+
+	bounces.add(App->physics->CreateCircle(210, 188, 23, b2BodyType::b2_staticBody));
+	bounces.getLast()->data->listener = (Module*)App->ball;
+	bounces.getLast()->data->body->GetFixtureList()->SetRestitution(0.0f); // Chain Bounciness ++
+	reboundableBody.add(bounces.getLast()->data); // Add this PhysBody to a special list in order to do rebound when collision
 
 	// Upper small rects
 	redRects.add(App->physics->CreateRectangle(187, 94, 3, 18));
@@ -96,6 +103,9 @@ bool ModuleScenePinball::LoadAssets()
 	leftPaddleTex = App->textures->Load("pinball/sprites/LeftStick.png");
 	rightPaddleTex = App->textures->Load("pinball/sprites/RightStick.png");
 	infraTex = App->textures->Load("pinball/sprites/InfraPinball.png");
+	initialTex = App->textures->Load("pinball/sprites/InitialScreen.png");
+	gameOverTex = App->textures->Load("pinball/sprites/GameOverScreen.png");
+
 	bonusFx = App->audio->LoadFx("pinball/audio/bonusFx.wav");
 	paddleFx = App->audio->LoadFx("pinball/audio/paddleFx.wav");
 
@@ -269,25 +279,47 @@ bool ModuleScenePinball::CleanUp()
 // Update: draw background
 update_status ModuleScenePinball::Update()
 {
-	DebugCreate();
+	if (gameStart == false && gameOver == false)
+	{
+		Debug();
 
-	PaddleInput();
-	
-	BonusLettersLogic();
-	// AL booleans false -- > Activate the array/list of chains of all map
-	// Map Sensor check
-	SensorLogic();
-	// If one boolean is true -- > Deactivate whole 
-		// Activate bodies to the corresponding boolean
-	
-	PreRayCast();
+		PaddleInput();
 
-	DrawInfra();
-	DrawBounces();
-	DrawPaddlles();
-	DrawBonusLetters();
+		BonusLettersLogic();
 
-	PostRayCast();
+		SensorLogic();
+
+		PreRayCast();
+
+		DrawInfra();
+		DrawBounces();
+		DrawPaddlles();
+		DrawBonusLetters();
+
+		PostRayCast();
+	}
+	else if (gameStart == true)
+	{
+		// Draw Image
+		App->renderer->Blit(initialTex, 0, 0);
+		if (App->input->GetKey(SDL_SCANCODE_SPACE) == KEY_DOWN)
+		{
+			// If press start then startGame = false;
+			gameStart = false;
+		}
+		
+	}
+	else if (gameOver == true)
+	{
+		// Draw Image
+		App->renderer->Blit(gameOverTex, 0, 0);
+		if (App->input->GetKey(SDL_SCANCODE_SPACE) == KEY_DOWN)
+		{
+			// If press start then startGame = false;
+			App->ball->lives = 3;
+			gameOver = false;
+		}
+	}
 
 	return UPDATE_CONTINUE;
 }
@@ -376,7 +408,7 @@ void ModuleScenePinball::PreRayCast()
 void ModuleScenePinball::PostRayCast()
 {
 	// ray 
-	if (ray_on == true)
+	if (ray_on == true && debug ==true)
 	{
 		fVector destination(mouse.x - ray.x, mouse.y - ray.y);
 		destination.Normalize();
@@ -389,7 +421,7 @@ void ModuleScenePinball::PostRayCast()
 	}
 }
 
-void ModuleScenePinball::DebugCreate()
+void ModuleScenePinball::Debug()
 {
 	if (App->input->GetKey(SDL_SCANCODE_SPACE) == KEY_DOWN)
 	{
@@ -401,6 +433,11 @@ void ModuleScenePinball::DebugCreate()
 	if (App->input->GetKey(SDL_SCANCODE_2) == KEY_DOWN)
 	{
 		boxes.add(App->physics->CreateRectangle(App->input->GetMouseX(), App->input->GetMouseY(), 100, 50, b2_dynamicBody));
+	}
+
+	if (App->input->GetKey(SDL_SCANCODE_F1) == KEY_DOWN)
+	{
+		debug = !debug;
 	}
 }
 
@@ -469,20 +506,14 @@ void ModuleScenePinball::StartBonusPointsPos()
 
 void ModuleScenePinball::BonusLettersLogic()
 {
+	int count = 0;
 	for (int i = 0; i < bonusLettersTex.count(); ++i)
 	{
 		if (bonusLetters[i] == true)
 		{
 			++bonusLetterTimer[i];
+			++count;
 			LOG("SENSOR %d is TRUE", i);
-
-			if (bonusLetterTimer[i] >= COUNTDOWNBONUS) // Cooldown of the bonus sensors
-			{
-				App->audio->PlayFx(bonusFx);
-				bonusLetterTimer[i] = 0;
-				bonusLetters[i] = false;
-			}
-
 		}
 
 		if (bonusLetterTimer[i] == 1) // Sum bonus score
@@ -490,6 +521,13 @@ void ModuleScenePinball::BonusLettersLogic()
 			App->audio->PlayFx(bonusFx);
 			App->hud->score += 40;
 		}
+	}
+
+	if (count == 9) // If all letters true add on live
+	{
+		App->audio->PlayFx(bonusFx);
+		SetAllBonusToFalse();
+		App->ball->lives += 1;
 	}
 }
 

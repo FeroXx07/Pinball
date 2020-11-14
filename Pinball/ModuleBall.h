@@ -40,7 +40,7 @@ private:
 	void CapBallVel();
 
 	// Debug functions
-	void DebugCreate();
+	void DebugAndInput();
 	void LogBall();
 
 private:
@@ -57,7 +57,7 @@ public:
 	bool dead = false;
 	bool lost = false;
 
-	void RestartGame();
+	void RestartGameScore();
 	uint lives = 3;
 
 	bool isBounce = false;
