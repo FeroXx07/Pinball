@@ -1,4 +1,4 @@
-# Pinball
+# Wooden Pinball
 ## Description
 
 A pinball game made for the subject of video Physics II of the grade of development and design of video games at the UPC in Barcelona.
